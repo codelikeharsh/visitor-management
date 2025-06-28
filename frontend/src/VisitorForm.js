@@ -63,7 +63,8 @@ const VisitorForm = () => {
     data.append("photo", photoBlob, "visitor.jpg");
 
     try {
-      await axios.post("http://localhost:5050/api/visitor", data);
+      const BACKEND = process.env.REACT_APP_BACKEND_URL;
+await axios.post(`${BACKEND}/api/visitor`, data);
       setMessage("✅ Visitor submitted successfully!");
       setFormData({ name: "", phone: "", reason: "" });
       setPhotoBlob(null);
