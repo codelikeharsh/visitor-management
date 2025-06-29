@@ -1,38 +1,73 @@
-.App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
+.page-container {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  background-color: #ffffff;
   min-height: 100vh;
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  box-sizing: border-box;
+}
+
+.gold-border {
+  width: 100%;
+  max-width: 600px;
+  border: 4px solid #d4af37;
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.05);
+  background: #fffdf5;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  box-sizing: border-box;
 }
 
-.App-link {
-  color: #61dafb;
+.main-heading {
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #222;
+  line-height: 1.5;
 }
 
-@keyframes App-logo-spin {
+.plant-image {
+  width: 100%;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.form-heading {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #000;
+}
+
+.form-wrapper {
+  width: 100%;
+  padding: 1rem 0;
+}
+
+.footer {
+  margin-top: 2rem;
+  font-size: 0.85rem;
+  text-align: center;
+  color: #999;
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
   from {
-    transform: rotate(0deg);
+    opacity: 0;
+    transform: translateY(15px);
   }
   to {
-    transform: rotate(360deg);
+    opacity: 1;
+    transform: translateY(0);
   }
 }
