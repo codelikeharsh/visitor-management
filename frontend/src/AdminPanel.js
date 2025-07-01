@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+// ✅ Use the correct environment variable name
+const BACKEND = process.env.REACT_APP_API_BASE_URL;
+
 const AdminPanel = () => {
   const [visitors, setVisitors] = useState([]);
   const [filter, setFilter] = useState("all");
 
   const fetchVisitors = async () => {
     try {
-      const res = await axios.get("https://visitor-managment.onrender.com/api/visitors");
+      const res = await axios.get(`${BACKEND}/visitors`);
       const sorted = res.data.sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       );
@@ -23,9 +26,7 @@ const AdminPanel = () => {
 
   const handleUpdateStatus = async (id, status) => {
     try {
-      await axios.patch(`https://visitor-managment.onrender.com/api/visitor/${id}/status`, {
-        status,
-      });
+      await axios.patch(`${BACKEND}/visitor/${id}/status`, { status });
       fetchVisitors();
     } catch (err) {
       console.error("Status update failed", err);
@@ -42,7 +43,7 @@ const AdminPanel = () => {
     if (!confirm) return;
 
     try {
-      await axios.delete(`https://visitor-managment.onrender.com/api/visitors/${id}`);
+      await axios.delete(`${BACKEND}/visitor/${id}`);
       fetchVisitors();
     } catch (err) {
       console.error("Failed to delete visitor", err);

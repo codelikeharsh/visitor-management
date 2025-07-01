@@ -35,31 +35,22 @@ app.get("/", (req, res) => {
 });
 
 // Upload and save visitor
-app.post("/api/visitor", upload.single("photo"), async (req, res) => {
+app.post("/visitor", upload.single("photo"), async (req, res) => {
   const { name, phone, reason } = req.body;
   const file = req.file;
 
   if (!file) {
-    console.error("❌ No file received in request");
     return res.status(400).json({ error: "No photo provided" });
   }
 
-  console.log("📥 Received visitor data:", { name, phone, reason });
-
   try {
-    // Upload to Cloudinary
     const streamUpload = (req) => {
       return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           { folder: "visitors" },
           (error, result) => {
-            if (error) {
-              console.error("❌ Cloudinary upload error:", error);
-              reject(error);
-            } else {
-              console.log("✅ Cloudinary upload success:", result.secure_url);
-              resolve(result);
-            }
+            if (error) reject(error);
+            else resolve(result);
           }
         );
         streamifier.createReadStream(req.file.buffer).pipe(stream);
@@ -68,7 +59,6 @@ app.post("/api/visitor", upload.single("photo"), async (req, res) => {
 
     const result = await streamUpload(req);
 
-    // Save to MongoDB
     const newVisitor = new Visitor({
       name,
       phone,
@@ -77,56 +67,47 @@ app.post("/api/visitor", upload.single("photo"), async (req, res) => {
     });
 
     await newVisitor.save();
-    console.log("✅ Visitor saved to MongoDB:", newVisitor._id);
     res.status(200).json({ message: "Visitor saved successfully!" });
   } catch (err) {
-    console.error("❌ Error in visitor POST route:", err);
     res.status(500).json({ error: err.message || "Failed to save visitor" });
   }
 });
 
 // Get all visitors
-app.get("/api/visitors", async (req, res) => {
+app.get("/visitors", async (req, res) => {
   try {
     const visitors = await Visitor.find().sort({ createdAt: -1 });
-    console.log(`📦 Fetched ${visitors.length} visitors`);
     res.status(200).json(visitors);
   } catch (err) {
-    console.error("❌ Error fetching visitors:", err);
     res.status(500).json({ error: "Failed to fetch visitors" });
   }
 });
 
 // Approve/reject visitor
-app.patch("/api/visitor/:id/status", async (req, res) => {
+app.patch("/visitor/:id/status", async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
   if (!["approved", "rejected"].includes(status)) {
-    console.warn("⚠️ Invalid status received:", status);
     return res.status(400).json({ error: "Invalid status" });
   }
 
   try {
     const updated = await Visitor.findByIdAndUpdate(id, { status }, { new: true });
-    console.log(`✅ Visitor ${id} updated to status: ${status}`);
     res.status(200).json(updated);
   } catch (err) {
-    console.error("❌ Error updating visitor status:", err);
     res.status(500).json({ error: "Failed to update status" });
   }
 });
 
 // Delete visitor
-app.delete("/api/visitor/:id", async (req, res) => {
+app.delete("/visitor/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
     await Visitor.findByIdAndDelete(id);
-    console.log(`🗑️ Visitor ${id} deleted from DB`);
     res.status(200).json({ message: "Visitor deleted successfully" });
   } catch (err) {
-    console.error("❌ Error deleting visitor:", err);
     res.status(500).json({ error: "Failed to delete visitor" });
   }
 });

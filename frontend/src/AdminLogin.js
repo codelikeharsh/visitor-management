@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+const ADMIN_USERNAME = process.env.REACT_APP_ADMIN_USERNAME || "admin";
+const ADMIN_PASSWORD = process.env.REACT_APP_ADMIN_PASSWORD || "1234";
+
+
 const AdminLogin = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -10,8 +14,7 @@ const AdminLogin = () => {
   const handleLogin = (e) => {
     e.preventDefault();
 
-    // Basic hardcoded login — can move to backend later
-    if (username === "admin" && password === "1234") {
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
       localStorage.setItem("isAdmin", "true");
       navigate("/admin");
     } else {

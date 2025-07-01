@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+const BASE_URL = process.env.REACT_APP_BACKEND_URL;
+
+
 const AdminDashboard = () => {
   const [visitors, setVisitors] = useState([]);
 
   const fetchVisitors = async () => {
     try {
-      const res = await axios.get("https://visitor-managment.onrender.com/api/visitors");
+      const res = await axios.get(`${BASE_URL}/visitors`);
       setVisitors(res.data);
     } catch (err) {
       console.error("❌ Failed to fetch visitors:", err);
@@ -15,9 +18,7 @@ const AdminDashboard = () => {
 
   const updateStatus = async (id, status) => {
     try {
-      await axios.patch(`https://visitor-managment.onrender.com/api/visitors/${id}/status`, {
-        status,
-      });
+      await axios.patch(`${BASE_URL}/visitors/${id}/status`, { status });
       fetchVisitors();
     } catch (err) {
       console.error("❌ Failed to update status:", err);
@@ -33,7 +34,7 @@ const AdminDashboard = () => {
     if (!window.confirm("Are you sure you want to delete this visitor?")) return;
 
     try {
-      await axios.delete(`https://visitor-managment.onrender.com/api/visitors/${id}`);
+      await axios.delete(`${BASE_URL}/visitors/${id}`);
       fetchVisitors();
     } catch (err) {
       console.error("❌ Failed to delete visitor:", err);

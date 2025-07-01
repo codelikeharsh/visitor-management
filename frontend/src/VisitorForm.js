@@ -3,6 +3,9 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+const BACKEND = process.env.REACT_APP_API_BASE_URL;
+
+
 const VisitorForm = () => {
   const [formData, setFormData] = useState({ name: "", phone: "", reason: "" });
   const [message, setMessage] = useState("");
@@ -27,48 +30,33 @@ const VisitorForm = () => {
   };
 
   const openCamera = () => {
-    console.log("🔍 Trying to access camera...");
-    setCameraActive(true); // First render the video element
-
-    // Wait until videoRef is available
+    setCameraActive(true);
     setTimeout(async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        console.log("✅ Camera stream received:", stream);
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        } else {
-          console.error("❌ videoRef.current is still null");
-          setMessage("❌ Unable to access video element.");
-        }
+        if (videoRef.current) videoRef.current.srcObject = stream;
       } catch (err) {
         console.error("❌ Camera access error:", err);
         setMessage("❌ Unable to access camera.");
       }
-    }, 300); // Wait for DOM render
+    }, 300);
   };
 
   const capturePhoto = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-
-    const targetWidth = 640;
-    const targetHeight = 480;
-    canvas.width = targetWidth;
-    canvas.height = targetHeight;
+    canvas.width = 640;
+    canvas.height = 480;
 
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+    ctx.drawImage(video, 0, 0, 640, 480);
 
     const shutterSound = new Audio("https://www.soundjay.com/mechanical/photo-shutter-click-01.mp3");
     shutterSound.play().catch(() => console.warn("⚠️ Shutter sound blocked."));
 
     canvas.toBlob((blob) => {
       if (!blob) return;
-      console.log("📷 Photo captured.");
       setPhotoBlob(new Blob([blob], { type: "image/jpeg" }));
-
       const tracks = video.srcObject?.getTracks();
       if (tracks) tracks.forEach(track => track.stop());
       video.srcObject = null;
@@ -90,12 +78,10 @@ const VisitorForm = () => {
     data.append("photo", photoBlob, "visitor.jpg");
 
     try {
-      console.log("📤 Submitting...");
       setLoading(true);
       setProgress(10);
 
-      const BACKEND = process.env.REACT_APP_BACKEND_URL;
-      await axios.post(`${BACKEND}/api/visitor`, data, {
+      await axios.post(`${BACKEND}/visitor`, data, {
         timeout: 10000,
         onUploadProgress: (e) => {
           const percent = Math.round((e.loaded * 100) / e.total);
@@ -103,12 +89,10 @@ const VisitorForm = () => {
         },
       });
 
-     console.log("✅ Submission successful.");
-toast.success("Visitor form submitted! You'll be notified via WhatsApp shortly.");
-setMessage("");
-setFormData({ name: "", phone: "", reason: "" });
-setPhotoBlob(null);
-
+      toast.success("Visitor form submitted! You'll be notified via WhatsApp shortly.");
+      setMessage("");
+      setFormData({ name: "", phone: "", reason: "" });
+      setPhotoBlob(null);
     } catch (err) {
       console.error("❌ Submission failed:", err);
       setMessage("❌ Failed to submit visitor.");
@@ -165,7 +149,6 @@ setPhotoBlob(null);
         }
       `}</style>
       <ToastContainer position="top-center" autoClose={4000} />
-
     </form>
   );
 };
