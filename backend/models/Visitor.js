@@ -8,7 +8,7 @@ const visitorSchema = new mongoose.Schema(
     photoPath: String,
     status: { type: String, default: "pending" },
   },
-  { timestamps: true } // adds createdAt and updatedAt
+  { timestamps: true }
 );
 
 module.exports = mongoose.model("Visitor", visitorSchema);
