@@ -24,6 +24,16 @@ const AdminDashboard = () => {
     }
   };
 
+  const deleteVisitor = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this visitor?")) return;
+    try {
+      await axios.delete(`https://visitor-managment.onrender.com/api/visitor/${id}`);
+      fetchVisitors();
+    } catch (err) {
+      console.error("❌ Failed to delete visitor:", err);
+    }
+  };
+
   useEffect(() => {
     fetchVisitors();
   }, []);
@@ -72,6 +82,12 @@ const AdminDashboard = () => {
               >
                 ❌ Reject
               </button>
+              <button
+                onClick={() => deleteVisitor(v._id)}
+                style={{ ...styles.button, backgroundColor: "#333" }}
+              >
+                🗑️ Delete
+              </button>
             </div>
           </div>
         ))
@@ -113,6 +129,7 @@ const styles = {
   actions: {
     display: "flex",
     gap: "1rem",
+    flexWrap: "wrap",
   },
   button: {
     padding: "0.5rem 1rem",

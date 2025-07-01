@@ -117,5 +117,19 @@ app.patch("/api/visitor/:id/status", async (req, res) => {
   }
 });
 
+// Delete visitor
+app.delete("/api/visitor/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await Visitor.findByIdAndDelete(id);
+    console.log(`🗑️ Visitor ${id} deleted from DB`);
+    res.status(200).json({ message: "Visitor deleted successfully" });
+  } catch (err) {
+    console.error("❌ Error deleting visitor:", err);
+    res.status(500).json({ error: "Failed to delete visitor" });
+  }
+});
+
 const PORT = process.env.PORT || 5050;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
