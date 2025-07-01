@@ -101,7 +101,7 @@ const AdminPanel = () => {
 
             {v.photoPath && (
               <img
-                src={`http://localhost:5050/${v.photoPath}`}
+                src={v.photoPath}
                 alt="Visitor"
                 style={{
                   width: "200px",
