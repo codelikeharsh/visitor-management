@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import VisitorForm from "./VisitorForm";
 import AdminPanel from "./AdminPanel";
 import AdminLogin from "./AdminLogin";
-import "./App.css"; // ✅ You will create this file below
+import "./App.css";
 
 const App = () => {
   return (

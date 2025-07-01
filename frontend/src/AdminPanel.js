@@ -7,7 +7,7 @@ const AdminPanel = () => {
 
   const fetchVisitors = async () => {
     try {
-      const res = await axios.get("https://visitor-managment.onrender.com/api/visitors");
+      const res = await axios.get("https://visitor-managment.onrender.com/api/visitor");
       const sorted = res.data.sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       );
@@ -23,7 +23,7 @@ const AdminPanel = () => {
 
   const handleUpdateStatus = async (id, status) => {
     try {
-      await axios.put(`https://visitor-managment.onrender.com/api/visitors${id}`, { status });
+      await axios.put(`https://visitor-managment.onrender.com/api/visitor${id}`, { status });
       fetchVisitors(); // Refresh list
     } catch (err) {
       console.error("Status update failed", err);

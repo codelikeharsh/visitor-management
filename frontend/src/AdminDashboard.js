@@ -6,7 +6,7 @@ const AdminDashboard = () => {
 
   const fetchVisitors = async () => {
     try {
-      const res = await axios.get("https://visitor-managment.onrender.com/api/visitors");
+      const res = await axios.get("https://visitor-managment.onrender.com/api/visitor");
       setVisitors(res.data);
     } catch (err) {
       console.error("❌ Failed to fetch visitors:", err);
@@ -24,8 +24,14 @@ const AdminDashboard = () => {
     }
   };
 
-  const deleteVisitor = async (id) => {
+  const deleteVisitor = async (id, status) => {
+    if (status === "pending") {
+      alert("⚠️ Cannot delete visitor with 'pending' status.");
+      return;
+    }
+
     if (!window.confirm("Are you sure you want to delete this visitor?")) return;
+
     try {
       await axios.delete(`https://visitor-managment.onrender.com/api/visitor/${id}`);
       fetchVisitors();
@@ -74,6 +80,7 @@ const AdminDashboard = () => {
               >
                 ✅ Approve
               </button>
+
               <button
                 onClick={() => updateStatus(v._id, "rejected")}
                 disabled={v.status === "rejected"}
@@ -81,9 +88,16 @@ const AdminDashboard = () => {
               >
                 ❌ Reject
               </button>
+
               <button
-                onClick={() => deleteVisitor(v._id)}
-                style={{ ...styles.button, backgroundColor: "#333" }}
+                onClick={() => deleteVisitor(v._id, v.status)}
+                disabled={v.status === "pending"}
+                style={{
+                  ...styles.button,
+                  backgroundColor: "#333",
+                  opacity: v.status === "pending" ? 0.5 : 1,
+                  cursor: v.status === "pending" ? "not-allowed" : "pointer",
+                }}
               >
                 🗑️ Delete
               </button>
@@ -140,8 +154,6 @@ const styles = {
     borderRadius: "6px",
     color: "#fff",
     fontWeight: "bold",
-    cursor: "pointer",
-    zIndex: 2,
   },
 };
 
