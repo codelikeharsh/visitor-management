@@ -7,7 +7,7 @@ const AdminPanel = () => {
 
   const fetchVisitors = async () => {
     try {
-      const res = await axios.get("https://visitor-managment.onrender.com/api/visitor");
+      const res = await axios.get("https://visitor-managment.onrender.com/api/visitors");
       const sorted = res.data.sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       );
@@ -23,10 +23,29 @@ const AdminPanel = () => {
 
   const handleUpdateStatus = async (id, status) => {
     try {
-      await axios.put(`https://visitor-managment.onrender.com/api/visitor${id}`, { status });
-      fetchVisitors(); // Refresh list
+      await axios.patch(`https://visitor-managment.onrender.com/api/visitors/${id}/status`, {
+        status,
+      });
+      fetchVisitors();
     } catch (err) {
       console.error("Status update failed", err);
+    }
+  };
+
+  const handleDelete = async (id, status) => {
+    if (status === "pending") {
+      alert("You cannot delete a visitor with pending status.");
+      return;
+    }
+
+    const confirm = window.confirm("Are you sure you want to delete this visitor?");
+    if (!confirm) return;
+
+    try {
+      await axios.delete(`https://visitor-managment.onrender.com/api/visitors/${id}`);
+      fetchVisitors();
+    } catch (err) {
+      console.error("Failed to delete visitor", err);
     }
   };
 
@@ -111,9 +130,10 @@ const AdminPanel = () => {
               />
             )}
 
-            <div style={{ marginTop: "1rem", display: "flex", gap: "1rem" }}>
+            <div style={{ marginTop: "1rem", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
               <button
                 onClick={() => handleUpdateStatus(v._id, "approved")}
+                disabled={v.status === "approved"}
                 style={{
                   background: "green",
                   color: "#fff",
@@ -126,6 +146,7 @@ const AdminPanel = () => {
               </button>
               <button
                 onClick={() => handleUpdateStatus(v._id, "rejected")}
+                disabled={v.status === "rejected"}
                 style={{
                   background: "red",
                   color: "#fff",
@@ -135,6 +156,18 @@ const AdminPanel = () => {
                 }}
               >
                 ❌ Reject
+              </button>
+              <button
+                onClick={() => handleDelete(v._id, v.status)}
+                style={{
+                  background: "#444",
+                  color: "#fff",
+                  padding: "0.5rem 1rem",
+                  border: "none",
+                  borderRadius: "6px",
+                }}
+              >
+                🗑️ Delete
               </button>
             </div>
           </div>

@@ -6,7 +6,7 @@ const AdminDashboard = () => {
 
   const fetchVisitors = async () => {
     try {
-      const res = await axios.get("https://visitor-managment.onrender.com/api/visitor");
+      const res = await axios.get("https://visitor-managment.onrender.com/api/visitors");
       setVisitors(res.data);
     } catch (err) {
       console.error("❌ Failed to fetch visitors:", err);
@@ -15,7 +15,7 @@ const AdminDashboard = () => {
 
   const updateStatus = async (id, status) => {
     try {
-      await axios.patch(`https://visitor-managment.onrender.com/api/visitor/${id}/status`, {
+      await axios.patch(`https://visitor-managment.onrender.com/api/visitors/${id}/status`, {
         status,
       });
       fetchVisitors();
@@ -33,7 +33,7 @@ const AdminDashboard = () => {
     if (!window.confirm("Are you sure you want to delete this visitor?")) return;
 
     try {
-      await axios.delete(`https://visitor-managment.onrender.com/api/visitor/${id}`);
+      await axios.delete(`https://visitor-managment.onrender.com/api/visitors/${id}`);
       fetchVisitors();
     } catch (err) {
       console.error("❌ Failed to delete visitor:", err);
@@ -59,10 +59,11 @@ const AdminDashboard = () => {
               <p><strong>Reason:</strong> {v.reason}</p>
               <p>
                 <strong>Status:</strong>{" "}
-                <span style={{ color: v.status === "approved" ? "green" : v.status === "rejected" ? "red" : "orange" }}>
+                <span style={{ color: getStatusColor(v.status) }}>
                   {v.status}
                 </span>
               </p>
+
               {v.photoPath && (
                 <img
                   src={v.photoPath}
@@ -76,7 +77,11 @@ const AdminDashboard = () => {
               <button
                 onClick={() => updateStatus(v._id, "approved")}
                 disabled={v.status === "approved"}
-                style={{ ...styles.button, backgroundColor: "#4CAF50" }}
+                style={{
+                  ...styles.button,
+                  backgroundColor: "#4CAF50",
+                  cursor: v.status === "approved" ? "not-allowed" : "pointer",
+                }}
               >
                 ✅ Approve
               </button>
@@ -84,7 +89,11 @@ const AdminDashboard = () => {
               <button
                 onClick={() => updateStatus(v._id, "rejected")}
                 disabled={v.status === "rejected"}
-                style={{ ...styles.button, backgroundColor: "#f44336" }}
+                style={{
+                  ...styles.button,
+                  backgroundColor: "#f44336",
+                  cursor: v.status === "rejected" ? "not-allowed" : "pointer",
+                }}
               >
                 ❌ Reject
               </button>
@@ -109,6 +118,17 @@ const AdminDashboard = () => {
   );
 };
 
+const getStatusColor = (status) => {
+  switch (status) {
+    case "approved":
+      return "green";
+    case "rejected":
+      return "red";
+    default:
+      return "orange";
+  }
+};
+
 const styles = {
   container: {
     padding: "2rem",
@@ -127,11 +147,9 @@ const styles = {
     padding: "1rem",
     marginBottom: "1.5rem",
     boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-    position: "relative",
-    zIndex: 0,
   },
   info: {
-    zIndex: 1,
+    marginBottom: "1rem",
   },
   image: {
     width: "150px",
@@ -140,13 +158,11 @@ const styles = {
     marginTop: "0.5rem",
     marginBottom: "1rem",
     display: "block",
-    zIndex: 1,
   },
   actions: {
     display: "flex",
     gap: "1rem",
     flexWrap: "wrap",
-    zIndex: 1,
   },
   button: {
     padding: "0.5rem 1rem",
