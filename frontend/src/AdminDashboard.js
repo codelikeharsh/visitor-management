@@ -15,7 +15,7 @@ const AdminDashboard = () => {
 
   const updateStatus = async (id, status) => {
     try {
-      await axios.patch(`https://visitor-managment.onrender.com/api/visitors/${id}/status`, {
+      await axios.patch(`https://visitor-managment.onrender.com/api/visitor/${id}/status`, {
         status,
       });
       fetchVisitors();
@@ -57,15 +57,14 @@ const AdminDashboard = () => {
                   {v.status}
                 </span>
               </p>
+              {v.photoPath && (
+                <img
+                  src={v.photoPath}
+                  alt="Visitor"
+                  style={styles.image}
+                />
+              )}
             </div>
-
-            {v.photoPath && (
-              <img
-                src={v.photoPath}
-                alt="Visitor"
-                style={styles.image}
-              />
-            )}
 
             <div style={styles.actions}>
               <button
@@ -114,22 +113,26 @@ const styles = {
     padding: "1rem",
     marginBottom: "1.5rem",
     boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+    position: "relative",
+    zIndex: 0,
   },
   info: {
-    marginBottom: "1rem",
+    zIndex: 1,
   },
   image: {
     width: "150px",
     borderRadius: "8px",
     border: "1px solid #ccc",
-    display: "block",
     marginTop: "0.5rem",
     marginBottom: "1rem",
+    display: "block",
+    zIndex: 1,
   },
   actions: {
     display: "flex",
     gap: "1rem",
     flexWrap: "wrap",
+    zIndex: 1,
   },
   button: {
     padding: "0.5rem 1rem",
@@ -138,6 +141,7 @@ const styles = {
     color: "#fff",
     fontWeight: "bold",
     cursor: "pointer",
+    zIndex: 2,
   },
 };
 
