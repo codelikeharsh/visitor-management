@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
-import * as faceapi from "face-api.js";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const VisitorForm = () => {
   const [formData, setFormData] = useState({ name: "", phone: "", reason: "" });
+  const [message, setMessage] = useState("");
   const [photoBlob, setPhotoBlob] = useState(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -15,17 +15,6 @@ const VisitorForm = () => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    const loadModel = async () => {
-      try {
-        await faceapi.nets.tinyFaceDetector.loadFromUri("/models");
-        toast.success("✅ Face detection model loaded.");
-      } catch (err) {
-        console.error("❌ Model loading failed:", err);
-        toast.error("❌ Failed to load face detection model.");
-      }
-    };
-    loadModel();
-
     return () => {
       if (videoRef.current?.srcObject) {
         videoRef.current.srcObject.getTracks().forEach(track => track.stop());
@@ -37,52 +26,62 @@ const VisitorForm = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const openCamera = async () => {
-    setCameraActive(true);
+  const openCamera = () => {
+    console.log("🔍 Trying to access camera...");
+    setCameraActive(true); // First render the video element
+
+    // Wait until videoRef is available
     setTimeout(async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (videoRef.current) videoRef.current.srcObject = stream;
+        console.log("✅ Camera stream received:", stream);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        } else {
+          console.error("❌ videoRef.current is still null");
+          setMessage("❌ Unable to access video element.");
+        }
       } catch (err) {
-        console.error("❌ Camera error:", err);
-        toast.error("❌ Unable to access camera.");
+        console.error("❌ Camera access error:", err);
+        setMessage("❌ Unable to access camera.");
       }
-    }, 300);
+    }, 300); // Wait for DOM render
   };
 
-  const capturePhoto = async () => {
+  const capturePhoto = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
-    canvas.width = 640;
-    canvas.height = 480;
+    const targetWidth = 640;
+    const targetHeight = 480;
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const detections = await faceapi.detectAllFaces(canvas, new faceapi.TinyFaceDetectorOptions());
-
-    if (!detections.length) {
-      toast.error("❌ No face detected. Try again.");
-      return;
-    }
+    ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
 
     const shutterSound = new Audio("https://www.soundjay.com/mechanical/photo-shutter-click-01.mp3");
-    shutterSound.play().catch(() => {});
+    shutterSound.play().catch(() => console.warn("⚠️ Shutter sound blocked."));
 
     canvas.toBlob((blob) => {
       if (!blob) return;
+      console.log("📷 Photo captured.");
       setPhotoBlob(new Blob([blob], { type: "image/jpeg" }));
 
       const tracks = video.srcObject?.getTracks();
       if (tracks) tracks.forEach(track => track.stop());
       video.srcObject = null;
       setCameraActive(false);
-    }, "image/jpeg", 0.7);
+    }, "image/jpeg", 0.6);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!photoBlob) return toast.error("❌ Please capture a photo.");
+    if (!photoBlob) {
+      setMessage("❌ Please capture a photo first.");
+      return;
+    }
 
     const data = new FormData();
     data.append("name", formData.name);
@@ -91,6 +90,7 @@ const VisitorForm = () => {
     data.append("photo", photoBlob, "visitor.jpg");
 
     try {
+      console.log("📤 Submitting...");
       setLoading(true);
       setProgress(10);
 
@@ -103,12 +103,15 @@ const VisitorForm = () => {
         },
       });
 
-      toast.success("✅ Form submitted. You’ll be notified via WhatsApp.");
-      setFormData({ name: "", phone: "", reason: "" });
-      setPhotoBlob(null);
+     console.log("✅ Submission successful.");
+toast.success("Visitor form submitted! You'll be notified via WhatsApp shortly.");
+setMessage("");
+setFormData({ name: "", phone: "", reason: "" });
+setPhotoBlob(null);
+
     } catch (err) {
-      console.error("❌ Submission error:", err);
-      toast.error("❌ Failed to submit form.");
+      console.error("❌ Submission failed:", err);
+      setMessage("❌ Failed to submit visitor.");
     } finally {
       setLoading(false);
       setProgress(0);
@@ -122,11 +125,13 @@ const VisitorForm = () => {
       <textarea name="reason" placeholder="Reason for Visit" value={formData.reason} onChange={handleChange} style={styles.textarea} rows={3} required />
 
       {photoBlob && !cameraActive && (
-        <img src={URL.createObjectURL(photoBlob)} alt="Captured" style={styles.photo} />
+        <img src={URL.createObjectURL(photoBlob)} alt="Captured" style={{ ...styles.photo, animation: "fadeIn 0.5s ease-in-out" }} />
       )}
 
       {!photoBlob && !cameraActive && (
-        <button type="button" onClick={openCamera} style={styles.captureBtn}>📸 Capture Photo</button>
+        <button type="button" onClick={openCamera} style={styles.captureBtn}>
+          📸 Capture Photo
+        </button>
       )}
 
       {cameraActive && (
@@ -142,11 +147,25 @@ const VisitorForm = () => {
       <canvas ref={canvasRef} style={{ display: "none" }} />
 
       {loading && <progress max="100" value={progress} style={{ width: "100%", height: "10px" }} />}
+
       <button type="submit" style={styles.submitBtn} disabled={loading}>
         {loading ? "Submitting..." : "Submit Entry"}
       </button>
 
+      {message && (
+        <div style={{ marginTop: "1rem", textAlign: "center", color: message.includes("✅") ? "green" : "red" }}>
+          {message}
+        </div>
+      )}
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.8); }
+          to { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
       <ToastContainer position="top-center" autoClose={4000} />
+
     </form>
   );
 };
@@ -196,6 +215,7 @@ const styles = {
     borderRadius: "50%",
     border: "4px solid #4CAF50",
     cursor: "pointer",
+    boxShadow: "0 0 10px rgba(0,0,0,0.3)",
   },
   photo: {
     width: "120px",
