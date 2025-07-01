@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const VisitorForm = () => {
   const [formData, setFormData] = useState({ name: "", phone: "", reason: "" });
@@ -101,9 +103,12 @@ const VisitorForm = () => {
         },
       });
 
-      setMessage("✅ Visitor submitted successfully!");
-      setFormData({ name: "", phone: "", reason: "" });
-      setPhotoBlob(null);
+     console.log("✅ Submission successful.");
+toast.success("Visitor form submitted! You'll be notified via WhatsApp shortly.");
+setMessage("");
+setFormData({ name: "", phone: "", reason: "" });
+setPhotoBlob(null);
+
     } catch (err) {
       console.error("❌ Submission failed:", err);
       setMessage("❌ Failed to submit visitor.");
@@ -144,7 +149,7 @@ const VisitorForm = () => {
       {loading && <progress max="100" value={progress} style={{ width: "100%", height: "10px" }} />}
 
       <button type="submit" style={styles.submitBtn} disabled={loading}>
-        {loading ? "Submitting..." : "🚪 Submit Entry"}
+        {loading ? "Submitting..." : "Submit Entry"}
       </button>
 
       {message && (
@@ -159,6 +164,8 @@ const VisitorForm = () => {
           to { opacity: 1; transform: scale(1); }
         }
       `}</style>
+      <ToastContainer position="top-center" autoClose={4000} />
+
     </form>
   );
 };
@@ -179,7 +186,7 @@ const styles = {
     resize: "vertical",
   },
   captureBtn: {
-    backgroundColor: "#d4af37",
+    backgroundColor: "#000000",
     color: "#fff",
     padding: "0.8rem",
     borderRadius: "8px",
