@@ -23,7 +23,7 @@ const AdminPanel = () => {
 
   const handleUpdateStatus = async (id, status) => {
     try {
-      await axios.patch(`https://visitor-managment.onrender.com/api/visitors/${id}/status`, {
+      await axios.patch(`https://visitor-managment.onrender.com/api/visitor/${id}/status`, {
         status,
       });
       fetchVisitors();
