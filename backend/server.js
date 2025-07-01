@@ -6,6 +6,9 @@ const dotenv = require("dotenv");
 const Visitor = require("./models/Visitor");
 const cloudinary = require("cloudinary").v2;
 const streamifier = require("streamifier");
+const cron = require("node-cron");
+const { exportToExcel } = require("./exportVisitors");
+const exportRouter = require("./routes/export");
 
 dotenv.config();
 const app = express();
@@ -29,22 +32,20 @@ mongoose
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// Health check route
+// Health check
 app.get("/", (req, res) => {
   res.send("✅ Backend is running.");
 });
 
-// Upload and save visitor
+// Create visitor
 app.post("/visitor", upload.single("photo"), async (req, res) => {
   const { name, phone, reason } = req.body;
   const file = req.file;
 
-  if (!file) {
-    return res.status(400).json({ error: "No photo provided" });
-  }
+  if (!file) return res.status(400).json({ error: "No photo provided" });
 
   try {
-    const streamUpload = (req) => {
+    const streamUpload = () => {
       return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           { folder: "visitors" },
@@ -53,11 +54,11 @@ app.post("/visitor", upload.single("photo"), async (req, res) => {
             else resolve(result);
           }
         );
-        streamifier.createReadStream(req.file.buffer).pipe(stream);
+        streamifier.createReadStream(file.buffer).pipe(stream);
       });
     };
 
-    const result = await streamUpload(req);
+    const result = await streamUpload();
 
     const newVisitor = new Visitor({
       name,
@@ -83,7 +84,7 @@ app.get("/visitors", async (req, res) => {
   }
 });
 
-// Approve/reject visitor
+// Update visitor status
 app.patch("/visitor/:id/status", async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -103,13 +104,21 @@ app.patch("/visitor/:id/status", async (req, res) => {
 // Delete visitor
 app.delete("/visitor/:id", async (req, res) => {
   const { id } = req.params;
-
   try {
     await Visitor.findByIdAndDelete(id);
     res.status(200).json({ message: "Visitor deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete visitor" });
   }
+});
+
+// Export Excel route
+app.use("/", exportRouter);
+
+// Cron Job: Daily 6 PM
+cron.schedule("0 18 * * *", async () => {
+  console.log("📅 Running daily visitor export at 6 PM...");
+  await exportToExcel();
 });
 
 const PORT = process.env.PORT || 5050;

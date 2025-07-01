@@ -1,17 +1,56 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import React, { useState } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import VisitorForm from "./VisitorForm";
 import AdminPanel from "./AdminPanel";
 import AdminLogin from "./AdminLogin";
+import GuardPanel from "./GuardPanel";
 import "./App.css";
 
 const App = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    localStorage.getItem("admin-auth") === "true"
+  );
+
+  const handleLogin = () => {
+    localStorage.setItem("admin-auth", "true");
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("admin-auth");
+    setIsLoggedIn(false);
+  };
+
   return (
     <Router>
       <Routes>
         <Route path="/" element={<VisitorPage />} />
-        <Route path="/admin" element={<AdminPanel />} />
-        <Route path="/login" element={<AdminLogin />} />
+        <Route
+          path="/admin"
+          element={
+            isLoggedIn ? (
+              <AdminPanel onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            isLoggedIn ? (
+              <Navigate to="/admin" replace />
+            ) : (
+              <AdminLogin onLogin={handleLogin} />
+            )
+          }
+        />
+        <Route path="/guard" element={<GuardPanel />} />
       </Routes>
     </Router>
   );

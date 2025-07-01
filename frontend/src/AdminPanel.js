@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { saveAs } from "file-saver";
 
-// ✅ Use the correct environment variable name
-const BACKEND = process.env.REACT_APP_API_BASE_URL;
+const BACKEND = process.env.REACT_APP_BACKEND_URL || "http://localhost:5050";
 
 const AdminPanel = () => {
   const [visitors, setVisitors] = useState([]);
   const [filter, setFilter] = useState("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const fetchVisitors = async () => {
     try {
@@ -50,6 +52,34 @@ const AdminPanel = () => {
     }
   };
 
+  const handleExport = async () => {
+    if (!startDate || !endDate) {
+      alert("Please select both start and end dates.");
+      return;
+    }
+
+    try {
+      const res = await axios.get(`${BACKEND}/export`, {
+        params: { start: startDate, end: endDate },
+        responseType: "blob",
+      });
+
+      const blob = new Blob([res.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      saveAs(blob, `visitors_${startDate}_to_${endDate}.xlsx`);
+    } catch (err) {
+      console.error("Export failed", err);
+      alert("Export failed.");
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("admin-auth");
+    window.location.href = "/login";
+  };
+
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     return date.toLocaleString("en-IN", {
@@ -65,24 +95,57 @@ const AdminPanel = () => {
 
   return (
     <div style={{ padding: "2rem", background: "#f4f4f4", minHeight: "100vh" }}>
-      <h2 style={{ textAlign: "center", marginBottom: "2rem" }}>👮 Admin Panel</h2>
-
-      <div style={{ marginBottom: "1.5rem", textAlign: "center" }}>
-        <label style={{ marginRight: "1rem", fontWeight: "bold" }}>
-          Filter by Status:
-        </label>
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          style={{ padding: "0.5rem", borderRadius: "6px" }}
-        >
-          <option value="all">All</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-        </select>
+      {/* 🔒 Logout button */}
+      <div style={styles.logoutWrapper}>
+        <button onClick={handleLogout} style={styles.logoutBtn}>
+          🔒 Logout
+        </button>
       </div>
 
+      <h2 style={{ textAlign: "center", marginBottom: "2rem" }}>👮 Admin Panel</h2>
+
+      {/* Filter + Export Controls */}
+      <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap", marginBottom: "2rem" }}>
+        <div>
+          <label><strong>Filter by Status: </strong></label>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            style={{ padding: "0.5rem", borderRadius: "6px" }}
+          >
+            <option value="all">All</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+
+        <div>
+          <label><strong>Start Date: </strong></label>
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+        </div>
+
+        <div>
+          <label><strong>End Date: </strong></label>
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+        </div>
+
+        <button
+          onClick={handleExport}
+          style={{
+            padding: "0.5rem 1rem",
+            backgroundColor: "#007bff",
+            color: "#fff",
+            borderRadius: "6px",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          📁 Export Excel
+        </button>
+      </div>
+
+      {/* Visitor List */}
       {filteredVisitors.length === 0 ? (
         <p style={{ textAlign: "center" }}>No visitor entries found.</p>
       ) : (
@@ -176,6 +239,26 @@ const AdminPanel = () => {
       )}
     </div>
   );
+};
+
+// 🔧 Styles for Logout
+const styles = {
+  logoutWrapper: {
+    position: "fixed",
+    top: "1rem",
+    right: "1rem",
+    zIndex: 1000,
+  },
+  logoutBtn: {
+    backgroundColor: "#e60000",
+    color: "#fff",
+    padding: "0.6rem 1.2rem",
+    border: "none",
+    borderRadius: "8px",
+    fontWeight: "bold",
+    cursor: "pointer",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+  },
 };
 
 export default AdminPanel;
