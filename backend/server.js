@@ -4,6 +4,7 @@ const multer = require("multer");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const Visitor = require("./models/Visitor");
+const Admin = require("./models/Admin");
 const cloudinary = require("cloudinary").v2;
 const streamifier = require("streamifier");
 const cron = require("node-cron");
@@ -35,6 +36,25 @@ const upload = multer({ storage });
 // Health check
 app.get("/", (req, res) => {
   res.send("✅ Backend is running.");
+});
+
+// Admin login
+app.post("/admin/login", async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const admin = await Admin.findOne({ username });
+    if (!admin || admin.password !== password) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      admin: { username: admin.username },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
 });
 
 // Create visitor
@@ -84,17 +104,24 @@ app.get("/visitors", async (req, res) => {
   }
 });
 
-// Update visitor status
+// Update visitor status with admin tracking
 app.patch("/visitor/:id/status", async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, adminUsername } = req.body;
+  console.log("Received adminUsername:", adminUsername); // 👈 Add this line
 
   if (!["approved", "rejected"].includes(status)) {
     return res.status(400).json({ error: "Invalid status" });
   }
 
   try {
-    const updated = await Visitor.findByIdAndUpdate(id, { status }, { new: true });
+    const updateFields = { status };
+if (status === "approved" && adminUsername)
+  updateFields.approvedBy = adminUsername;
+if (status === "rejected" && adminUsername)
+  updateFields.rejectedBy = adminUsername;
+
+    const updated = await Visitor.findByIdAndUpdate(id, updateFields, { new: true });
     res.status(200).json(updated);
   } catch (err) {
     res.status(500).json({ error: "Failed to update status" });
@@ -121,5 +148,7 @@ cron.schedule("0 18 * * *", async () => {
   await exportToExcel();
 });
 
+// Start server
 const PORT = process.env.PORT || 5050;
+
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

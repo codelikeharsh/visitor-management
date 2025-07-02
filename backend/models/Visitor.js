@@ -6,7 +6,13 @@ const visitorSchema = new mongoose.Schema(
     phone: String,
     reason: String,
     photoPath: String,
-    status: { type: String, default: "pending" },
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+    approvedBy: { type: String, default: null },
+    rejectedBy: { type: String, default: null },
   },
   { timestamps: true }
 );

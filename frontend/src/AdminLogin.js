@@ -1,4 +1,8 @@
 import React, { useState } from "react";
+import axios from "axios";
+import { Helmet } from "react-helmet";
+
+const BACKEND = process.env.REACT_APP_BACKEND_URL || "http://localhost:5050";
 
 const AdminLogin = ({ onLogin }) => {
   const [username, setUsername] = useState("");
@@ -7,22 +11,38 @@ const AdminLogin = ({ onLogin }) => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const adminUser = process.env.REACT_APP_ADMIN_USERNAME || "admin";
-    const adminPass = process.env.REACT_APP_ADMIN_PASSWORD || "1234";
-
     setLoading(true);
-    setTimeout(() => {
-      if (username === adminUser && password === adminPass) {
-        localStorage.setItem("admin-auth", "true");
-        onLogin();
+    setError("");
+
+    try {
+      const res = await axios.post(`${BACKEND}/admin/login`, {
+        username,
+        password,
+      });
+
+      console.log("Login response:", res.data); // ✅ Debugging output
+
+      localStorage.setItem("admin-auth", "true");
+
+      // ✅ Fix: store the correct admin username from response
+      const adminUsername = res.data.admin?.username;
+      if (adminUsername) {
+        localStorage.setItem("admin-username", adminUsername);
       } else {
-        setError("❌ Invalid username or password");
-        setTimeout(() => setError(""), 3000);
+        console.error("admin.username missing in login response");
       }
+
+      onLogin(adminUsername); // ✅ Pass username back to App.js
+
+    } catch (err) {
+      console.error("Login failed:", err);
+      setError("❌ Invalid username or password");
+      setTimeout(() => setError(""), 3000);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -54,11 +74,7 @@ const AdminLogin = ({ onLogin }) => {
           </div>
 
           <button type="submit" style={styles.button} disabled={loading}>
-            {loading ? (
-              <div style={styles.loader}></div>
-            ) : (
-              "Login"
-            )}
+            {loading ? <div style={styles.loader}></div> : "Login"}
           </button>
         </form>
 
@@ -104,13 +120,12 @@ const styles = {
     fontSize: "1rem",
   },
   passwordWrapper: {
-  position: "relative",
-  width: "100%",
-  overflow: "hidden", // ensures nothing leaks out
-  display: "flex",
-  alignItems: "center",
-},
-
+    position: "relative",
+    width: "100%",
+    overflow: "hidden",
+    display: "flex",
+    alignItems: "center",
+  },
   passwordInput: {
     padding: "0.75rem",
     paddingRight: "40px",
@@ -120,15 +135,15 @@ const styles = {
     width: "100%",
   },
   eye: {
-  position: "absolute",
-  right: "12px",
-  top: "50%",
-  transform: "translateY(-50%)",
-  cursor: "pointer",
-  fontSize: "1.1rem",
-  userSelect: "none",
-  lineHeight: 1,
-},
+    position: "absolute",
+    right: "12px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    cursor: "pointer",
+    fontSize: "1.1rem",
+    userSelect: "none",
+    lineHeight: 1,
+  },
   button: {
     backgroundColor: "#3498db",
     color: "#fff",
@@ -165,7 +180,7 @@ const styles = {
   },
 };
 
-// CSS spinner animation
+// Add keyframe animation for spinner
 const styleSheet = document.createElement("style");
 styleSheet.innerHTML = `
   @keyframes spin {

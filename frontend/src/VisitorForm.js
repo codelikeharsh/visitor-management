@@ -90,7 +90,7 @@ const VisitorForm = () => {
         },
       });
 
-      toast.success("Visitor form submitted! You'll be notified via WhatsApp shortly.");
+      toast.success("Visitor form submitted!");
       setMessage("");
       setFormData({ name: "", phone: "", reason: "" });
       setPhotoBlob(null);
@@ -104,6 +104,7 @@ const VisitorForm = () => {
   };
 
   return (
+
     <form onSubmit={handleSubmit} style={styles.form}>
       <input type="text" name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} style={styles.input} required />
       <input type="tel" name="phone" placeholder="Phone Number" value={formData.phone} onChange={handleChange} style={styles.input} required />

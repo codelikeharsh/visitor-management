@@ -16,13 +16,15 @@ const App = () => {
     localStorage.getItem("admin-auth") === "true"
   );
 
-  const handleLogin = () => {
+  const handleLogin = (username) => {
     localStorage.setItem("admin-auth", "true");
+    localStorage.setItem("admin-username", username);
     setIsLoggedIn(true);
   };
 
   const handleLogout = () => {
     localStorage.removeItem("admin-auth");
+    localStorage.removeItem("admin-username");
     setIsLoggedIn(false);
   };
 
@@ -30,6 +32,7 @@ const App = () => {
     <Router>
       <Routes>
         <Route path="/" element={<VisitorPage />} />
+
         <Route
           path="/admin"
           element={
@@ -40,6 +43,7 @@ const App = () => {
             )
           }
         />
+
         <Route
           path="/login"
           element={
@@ -50,6 +54,7 @@ const App = () => {
             )
           }
         />
+
         <Route path="/guard" element={<GuardPanel />} />
       </Routes>
     </Router>
@@ -64,7 +69,7 @@ const VisitorPage = () => (
       </h1>
 
       <img
-        src="https://static.pib.gov.in/WriteReadData/userfiles/image/image002QLIF.jpg"
+        src="https://static.pib.gov.in/WriteReadData/userfiles/image/image0018I41.jpg"
         alt="Green Waste Plant"
         className="plant-image"
       />
@@ -76,7 +81,12 @@ const VisitorPage = () => (
       </div>
 
       <footer className="footer">
+        <div>
         © {new Date().getFullYear()} Bicholi Hapsi Green Waste Plant. All rights reserved.
+       </div>
+       <div>
+        Crafted with ❤️ by Harsh
+       </div>
       </footer>
     </div>
   </div>
