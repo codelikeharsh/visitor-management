@@ -4,8 +4,6 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL;
-;
-
 
 const VisitorForm = () => {
   const [formData, setFormData] = useState({ name: "", phone: "", reason: "" });
@@ -27,7 +25,8 @@ const VisitorForm = () => {
   }, []);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: name === "phone" ? value.replace(/\D/g, "") : value });
   };
 
   const openCamera = () => {
@@ -48,18 +47,14 @@ const VisitorForm = () => {
     const canvas = canvasRef.current;
     canvas.width = 640;
     canvas.height = 480;
-
     const ctx = canvas.getContext("2d");
     ctx.drawImage(video, 0, 0, 640, 480);
-
     const shutterSound = new Audio("https://www.soundjay.com/mechanical/photo-shutter-click-01.mp3");
     shutterSound.play().catch(() => console.warn("⚠️ Shutter sound blocked."));
-
     canvas.toBlob((blob) => {
       if (!blob) return;
       setPhotoBlob(new Blob([blob], { type: "image/jpeg" }));
-      const tracks = video.srcObject?.getTracks();
-      if (tracks) tracks.forEach(track => track.stop());
+      video.srcObject?.getTracks().forEach(track => track.stop());
       video.srcObject = null;
       setCameraActive(false);
     }, "image/jpeg", 0.6);
@@ -67,29 +62,26 @@ const VisitorForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!/^\d{10}$/.test(formData.phone)) {
+      setMessage("❌ Phone number must be exactly 10 digits.");
+      return;
+    }
     if (!photoBlob) {
       setMessage("❌ Please capture a photo first.");
       return;
     }
-
     const data = new FormData();
     data.append("name", formData.name);
     data.append("phone", formData.phone);
     data.append("reason", formData.reason);
     data.append("photo", photoBlob, "visitor.jpg");
-
     try {
       setLoading(true);
       setProgress(10);
-
       await axios.post(`${BACKEND}/visitor`, data, {
         timeout: 10000,
-        onUploadProgress: (e) => {
-          const percent = Math.round((e.loaded * 100) / e.total);
-          setProgress(percent);
-        },
+        onUploadProgress: (e) => setProgress(Math.round((e.loaded * 100) / e.total)),
       });
-
       toast.success("Visitor form submitted!");
       setMessage("");
       setFormData({ name: "", phone: "", reason: "" });
@@ -104,14 +96,44 @@ const VisitorForm = () => {
   };
 
   return (
-
     <form onSubmit={handleSubmit} style={styles.form}>
-      <input type="text" name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} style={styles.input} required />
-      <input type="tel" name="phone" placeholder="Phone Number" value={formData.phone} onChange={handleChange} style={styles.input} required />
-      <textarea name="reason" placeholder="Reason for Visit" value={formData.reason} onChange={handleChange} style={styles.textarea} rows={3} required />
+      <input
+        type="text"
+        name="name"
+        placeholder="Full Name"
+        value={formData.name}
+        onChange={handleChange}
+        style={styles.input}
+        required
+      />
+      <input
+        type="tel"
+        name="phone"
+        placeholder="Phone Number"
+        value={formData.phone}
+        onChange={handleChange}
+        style={styles.input}
+        maxLength="10"
+        pattern="\d{10}"
+        title="Enter exactly 10 digits"
+        required
+      />
+      <textarea
+        name="reason"
+        placeholder="Reason for Visit"
+        value={formData.reason}
+        onChange={handleChange}
+        style={styles.textarea}
+        rows={3}
+        required
+      />
 
       {photoBlob && !cameraActive && (
-        <img src={URL.createObjectURL(photoBlob)} alt="Captured" style={{ ...styles.photo, animation: "fadeIn 0.5s ease-in-out" }} />
+        <img
+          src={URL.createObjectURL(photoBlob)}
+          alt="Captured"
+          style={{ ...styles.photo, animation: "fadeIn 0.5s ease-in-out" }}
+        />
       )}
 
       {!photoBlob && !cameraActive && (
