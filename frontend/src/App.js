@@ -69,7 +69,7 @@ const VisitorPage = () => (
       </h1>
 
       <img
-        src="https://i.ibb.co/tMrRjfrY/Whats-App-Image-2025-07-04-at-13-26-36.jpg"
+        src="https://i.ibb.co/6cRL7xNr/Whats-App-Image-2025-07-04-at-19-57-11.jpg"
         alt="Green Waste Plant"
         className="plant-image"
       />
