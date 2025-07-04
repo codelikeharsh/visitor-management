@@ -101,7 +101,7 @@ const AdminPanel = () => {
 
   return (
     <div style={styles.container}>
-      {/* Logo */}
+      {/* Header */}
       <div style={styles.headerSection}>
         <img
           src="https://i.ibb.co/BVtrc6bv/file-00000000c68061f597b5d88c579c8394.png"
@@ -110,7 +110,6 @@ const AdminPanel = () => {
         />
         <h2 style={styles.companyName}>The Waste Management (WM) Co.</h2>
 
-        {/* Admin Dropdown (Centered Below Company Name) */}
         <div style={styles.centeredProfile}>
           <div
             onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -122,9 +121,9 @@ const AdminPanel = () => {
           </div>
           {dropdownOpen && (
             <div style={styles.dropdownMenu}>
-              <div style={styles.dropdownItem}>👤 <strong>{adminUsername}</strong></div>
+              <div style={styles.dropdownItem}>Logged in as <strong>{adminUsername}</strong></div>
               <hr style={{ margin: "0.5rem 0" }} />
-              <button onClick={handleLogout} style={styles.logoutBtn}>🚪 Logout</button>
+              <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
             </div>
           )}
         </div>
@@ -132,7 +131,7 @@ const AdminPanel = () => {
 
       {/* Filters */}
       <div style={styles.filterWrapper}>
-        <div>
+        <div style={styles.statusFilter}>
           <label><strong>Status:</strong></label>
           <select
             value={filter}
@@ -148,23 +147,25 @@ const AdminPanel = () => {
 
         {!showExportFields ? (
           <button onClick={() => setShowExportFields(true)} style={styles.exportBtn}>
-            📁 Export Excel
+            Export
           </button>
         ) : (
           <>
             <input
               type="date"
+              placeholder="Start Date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               style={styles.dateInput}
             />
             <input
               type="date"
+              placeholder="End Date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               style={styles.dateInput}
             />
-            <button onClick={handleExport} style={styles.exportBtn}>✅ Confirm</button>
+            <button onClick={handleExport} style={styles.downloadBtn}>⬇️ Download</button>
             <button
               onClick={() => {
                 setShowExportFields(false);
@@ -173,7 +174,7 @@ const AdminPanel = () => {
               }}
               style={styles.cancelBtn}
             >
-              ❌ Cancel
+              Cancel
             </button>
           </>
         )}
@@ -219,7 +220,7 @@ const AdminPanel = () => {
                     background: v.status === "pending" ? "green" : "#ccc",
                   }}
                 >
-                  ✅ Approve
+                  Approve
                 </button>
                 <button
                   onClick={() => handleUpdateStatus(v._id, "rejected")}
@@ -229,13 +230,13 @@ const AdminPanel = () => {
                     background: v.status === "pending" ? "red" : "#ccc",
                   }}
                 >
-                  ❌ Reject
+                  Reject
                 </button>
                 <button
                   onClick={() => handleDelete(v._id, v.status)}
                   style={{ ...styles.actionBtn, background: "#444" }}
                 >
-                  🗑️ Delete
+                  Delete
                 </button>
               </div>
             </div>
@@ -249,7 +250,7 @@ const AdminPanel = () => {
 const styles = {
   container: {
     padding: "1rem",
-    fontFamily: "Segoe UI, sans-serif",
+    fontFamily: "'Figtree', sans-serif",
     background: "#f4f4f4",
     minHeight: "100vh",
   },
@@ -263,7 +264,6 @@ const styles = {
     borderRadius: "8px",
   },
   companyName: {
-    fontFamily: "'Figtree', sans-serif",
     fontSize: "1.5rem",
     fontWeight: "bold",
     color: "#2c3e50",
@@ -289,7 +289,7 @@ const styles = {
   avatarCircle: {
     width: "32px",
     height: "32px",
-    backgroundColor: "#007bff",
+    backgroundColor: "#000000",
     color: "#fff",
     borderRadius: "50%",
     display: "flex",
@@ -299,7 +299,7 @@ const styles = {
     fontSize: "1rem",
   },
   username: {
-    fontWeight: "500",
+    fontWeight: "bold",
     fontSize: "0.95rem",
     color: "#333",
   },
@@ -334,10 +334,16 @@ const styles = {
   },
   filterWrapper: {
     display: "flex",
-    flexWrap: "wrap",
+    alignItems: "center",
     justifyContent: "center",
-    gap: "0.75rem",
+    gap: "1rem",
+    flexWrap: "wrap",
     marginBottom: "2rem",
+  },
+  statusFilter: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
   },
   select: {
     padding: "0.5rem",
@@ -352,6 +358,14 @@ const styles = {
   exportBtn: {
     padding: "0.5rem 1rem",
     backgroundColor: "#007bff",
+    color: "#fff",
+    borderRadius: "6px",
+    border: "none",
+    cursor: "pointer",
+  },
+  downloadBtn: {
+    padding: "0.5rem 1rem",
+    backgroundColor: "#00C000",
     color: "#fff",
     borderRadius: "6px",
     border: "none",
@@ -395,7 +409,6 @@ const styles = {
     borderRadius: "6px",
     cursor: "pointer",
   },
-  
 };
 
 export default AdminPanel;
