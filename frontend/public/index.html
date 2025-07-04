@@ -20,15 +20,16 @@
     -->
     <script>
   const path = window.location.pathname;
-  const manifest = path.startsWith("/guard")
-    ? "/guard-manifest.json"
-    : "/admin-manifest.json";
+  let manifest = "/manifest-visitor.json";
+  if (path.startsWith("/admin")) manifest = "/manifest-admin.json";
+  else if (path.startsWith("/guard")) manifest = "/manifest-guard.json";
 
   const link = document.createElement("link");
   link.rel = "manifest";
   link.href = manifest;
   document.head.appendChild(link);
 </script>
+
 
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.

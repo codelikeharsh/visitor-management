@@ -41,7 +41,7 @@ const GuardPanel = () => {
   return (
     <div style={styles.container}>
       <Helmet>
-        <title>Guard Panel</title>
+        <title>Guard Panel - The Waste Management Co.</title>
       </Helmet>
 
       {/* Header with Logo and Company Name */}
@@ -102,7 +102,6 @@ const styles = {
   },
   companyName: {
     fontFamily: "'Figtree', sans-serif",
-  
     fontSize: "1.5rem",
     fontWeight: "bold",
     color: "#2c3e50",

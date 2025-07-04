@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
+import { Helmet } from "react-helmet";
 import "react-toastify/dist/ReactToastify.css";
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL;
@@ -97,6 +98,10 @@ const VisitorForm = () => {
 
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
+      <Helmet>
+        <title>Visitor App - The Waste Management Co.</title>
+      </Helmet>
+
       <input
         type="text"
         name="name"

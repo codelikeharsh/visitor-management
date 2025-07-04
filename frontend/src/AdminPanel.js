@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { saveAs } from "file-saver";
+import { Helmet } from "react-helmet";
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL || "http://localhost:5050";
 
@@ -101,6 +102,10 @@ const AdminPanel = () => {
 
   return (
     <div style={styles.container}>
+      <Helmet>
+        <title>Admin Panel - The Waste Management Co.</title>
+      </Helmet>
+
       {/* Header */}
       <div style={styles.headerSection}>
         <img
