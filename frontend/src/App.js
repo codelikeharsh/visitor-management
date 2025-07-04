@@ -65,7 +65,7 @@ const VisitorPage = () => (
   <div className="page-container fade-in">
     <div className="gold-border">
       <h1 className="main-heading">
-        Welcome to India's First PPP<br />Green Waste Processing Plant
+        Welcome to India's First PPP<br/> Green Waste Processing Plant
       </h1>
 
       <img
@@ -82,7 +82,10 @@ const VisitorPage = () => (
 
       <footer className="footer">
         <div>
-        © {new Date().getFullYear()} The Waste Management (WM) Co. All rights reserved.
+        © {new Date().getFullYear()} The Waste Management (WM) Co.
+       </div>
+       <div>
+        All Rights Reserved.
        </div>
        <div>
         Crafted with ❤️ by Harsh
