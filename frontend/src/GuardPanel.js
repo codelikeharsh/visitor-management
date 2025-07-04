@@ -44,11 +44,18 @@ const GuardPanel = () => {
         <title>Guard Panel</title>
       </Helmet>
 
+      {/* Header with Logo and Company Name */}
       <div style={styles.header}>
-        <h2 style={styles.title}>🛂 Guard Panel</h2>
+        <img
+          src="https://i.ibb.co/BVtrc6bv/file-00000000c68061f597b5d88c579c8394.png"
+          alt="The Waste Management (WM) Co."
+          style={styles.logo}
+        />
+        <h2 style={styles.companyName}>The Waste Management (WM) Co.</h2>
         <p style={styles.date}>{today}</p>
       </div>
 
+      {/* Visitor List */}
       <div style={styles.listWrapper}>
         {approvedVisitors.length === 0 ? (
           <p style={styles.noVisitors}>No approved visitors for today.</p>
@@ -81,16 +88,27 @@ const styles = {
     background: "#eef3f7",
     minHeight: "100vh",
     fontFamily: "Segoe UI, sans-serif",
+    paddingTop: "0.5rem",
   },
   header: {
     textAlign: "center",
     marginBottom: "2rem",
   },
-  title: {
-    fontSize: "2rem",
+  logo: {
+    height: "80px",
+    marginBottom: "0.1rem",
+    borderRadius: "8px",
+    marginTop: 0,
+  },
+  companyName: {
+    fontFamily: "'Figtree', sans-serif",
+  
+    fontSize: "1.5rem",
     fontWeight: "bold",
     color: "#2c3e50",
     marginBottom: "0.2rem",
+    marginTop: 0,
+    lineHeight: "1.2",
   },
   date: {
     fontSize: "1rem",

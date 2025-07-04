@@ -69,7 +69,7 @@ const VisitorPage = () => (
       </h1>
 
       <img
-        src="https://static.pib.gov.in/WriteReadData/userfiles/image/image0018I41.jpg"
+        src="https://i.ibb.co/tMrRjfrY/Whats-App-Image-2025-07-04-at-13-26-36.jpg"
         alt="Green Waste Plant"
         className="plant-image"
       />
@@ -82,7 +82,7 @@ const VisitorPage = () => (
 
       <footer className="footer">
         <div>
-        © {new Date().getFullYear()} Bicholi Hapsi Green Waste Plant. All rights reserved.
+        © {new Date().getFullYear()} The Waste Management (WM) Co. All rights reserved.
        </div>
        <div>
         Crafted with ❤️ by Harsh

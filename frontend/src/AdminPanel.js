@@ -9,33 +9,32 @@ const AdminPanel = () => {
   const [filter, setFilter] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [showExportFields, setShowExportFields] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
   const adminUsername = localStorage.getItem("admin-username") || "Unknown";
 
-  const fetchVisitors = async () => {
-    try {
-      const res = await axios.get(`${BACKEND}/visitors`);
-      const sorted = res.data.sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-      );
-      setVisitors(sorted);
-    } catch (err) {
-      console.error("Error fetching visitors", err);
-    }
-  };
-
   useEffect(() => {
+    const fetchVisitors = async () => {
+      try {
+        const res = await axios.get(`${BACKEND}/visitors`);
+        const sorted = res.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setVisitors(sorted);
+      } catch (err) {
+        console.error("Error fetching visitors", err);
+      }
+    };
     fetchVisitors();
   }, []);
 
   const handleUpdateStatus = async (id, status) => {
-    const adminUsername = localStorage.getItem("admin-username");
     try {
       await axios.patch(`${BACKEND}/visitor/${id}/status`, {
         status,
         adminUsername,
       });
-      fetchVisitors();
+      const res = await axios.get(`${BACKEND}/visitors`);
+      setVisitors(res.data);
     } catch (err) {
       console.error("Status update failed", err);
     }
@@ -43,16 +42,16 @@ const AdminPanel = () => {
 
   const handleDelete = async (id, status) => {
     if (status === "pending") {
-      alert("You cannot delete a visitor with pending status.");
+      alert("Cannot delete a visitor with pending status.");
       return;
     }
 
-    const confirm = window.confirm("Are you sure you want to delete this visitor?");
-    if (!confirm) return;
+    if (!window.confirm("Are you sure you want to delete this visitor?")) return;
 
     try {
       await axios.delete(`${BACKEND}/visitor/${id}`);
-      fetchVisitors();
+      const res = await axios.get(`${BACKEND}/visitors`);
+      setVisitors(res.data);
     } catch (err) {
       console.error("Failed to delete visitor", err);
     }
@@ -69,15 +68,15 @@ const AdminPanel = () => {
         params: { start: startDate, end: endDate },
         responseType: "blob",
       });
-
       const blob = new Blob([res.data], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
-
       saveAs(blob, `visitors_${startDate}_to_${endDate}.xlsx`);
+      setShowExportFields(false);
+      setStartDate("");
+      setEndDate("");
     } catch (err) {
       console.error("Export failed", err);
-      alert("Export failed.");
     }
   };
 
@@ -102,31 +101,30 @@ const AdminPanel = () => {
 
   return (
     <div style={styles.container}>
-      {/* Header */}
-      <div style={styles.header} className="admin-header">
-        <h3 style={styles.title}>Admin Panel</h3>
+      {/* Logo */}
+      <div style={styles.headerSection}>
+        <img
+          src="https://i.ibb.co/BVtrc6bv/file-00000000c68061f597b5d88c579c8394.png"
+          alt="The Waste Management (WM) Co."
+          style={styles.logo}
+        />
+        <h2 style={styles.companyName}>The Waste Management (WM) Co.</h2>
 
-        <div style={styles.profileContainer}>
+        {/* Admin Dropdown (Centered Below Company Name) */}
+        <div style={styles.centeredProfile}>
           <div
             onClick={() => setDropdownOpen(!dropdownOpen)}
             style={styles.profileButton}
           >
-            <span style={styles.avatarCircle}>
-              {adminUsername[0]?.toUpperCase()}
-            </span>
+            <span style={styles.avatarCircle}>{adminUsername[0]?.toUpperCase()}</span>
             <span style={styles.username}>{adminUsername}</span>
             <span style={styles.arrow}>{dropdownOpen ? "▲" : "▼"}</span>
           </div>
-
           {dropdownOpen && (
             <div style={styles.dropdownMenu}>
-              <div style={styles.dropdownItem}>
-                👤 <strong>{adminUsername}</strong>
-              </div>
+              <div style={styles.dropdownItem}>👤 <strong>{adminUsername}</strong></div>
               <hr style={{ margin: "0.5rem 0" }} />
-              <button onClick={handleLogout} style={styles.logoutBtn}>
-                🚪 Logout
-              </button>
+              <button onClick={handleLogout} style={styles.logoutBtn}>🚪 Logout</button>
             </div>
           )}
         </div>
@@ -139,7 +137,7 @@ const AdminPanel = () => {
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            style={{ padding: "0.5rem", borderRadius: "6px" }}
+            style={styles.select}
           >
             <option value="all">All</option>
             <option value="pending">Pending</option>
@@ -148,133 +146,134 @@ const AdminPanel = () => {
           </select>
         </div>
 
-        <div>
-          <label><strong>Start:</strong></label>
-          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-        </div>
-
-        <div>
-          <label><strong>End:</strong></label>
-          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-        </div>
-
-        <button
-          onClick={handleExport}
-          style={styles.exportBtn}
-        >
-          📁 Export Excel
-        </button>
+        {!showExportFields ? (
+          <button onClick={() => setShowExportFields(true)} style={styles.exportBtn}>
+            📁 Export Excel
+          </button>
+        ) : (
+          <>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              style={styles.dateInput}
+            />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              style={styles.dateInput}
+            />
+            <button onClick={handleExport} style={styles.exportBtn}>✅ Confirm</button>
+            <button
+              onClick={() => {
+                setShowExportFields(false);
+                setStartDate("");
+                setEndDate("");
+              }}
+              style={styles.cancelBtn}
+            >
+              ❌ Cancel
+            </button>
+          </>
+        )}
       </div>
 
       {/* Visitor Cards */}
-      {filteredVisitors.length === 0 ? (
-        <p style={{ textAlign: "center" }}>No visitor entries found.</p>
-      ) : (
-        filteredVisitors.map((v, index) => (
-          <div key={v._id} style={styles.card}>
-            <p><strong>#{index + 1}</strong></p>
-            <p><strong>Name:</strong> {v.name}</p>
-            <p><strong>Phone:</strong> {v.phone}</p>
-            <p><strong>Reason:</strong> {v.reason}</p>
-            <p><strong>Time:</strong> {formatDate(v.createdAt)}</p>
-            <p>
-              <strong>Status:</strong>{" "}
-              <span style={{
-                color:
-                  v.status === "approved" ? "green" :
-                  v.status === "rejected" ? "red" : "orange",
-                fontWeight: "bold"
-              }}>
-                {v.status}
-              </span>
-            </p>
-            {v.status === "approved" && v.approvedBy && (
-              <p><strong>Approved By:</strong> {v.approvedBy}</p>
-            )}
-            {v.status === "rejected" && v.rejectedBy && (
-              <p><strong>Rejected By:</strong> {v.rejectedBy}</p>
-            )}
-
-            {v.photoPath && (
-              <img
-                src={v.photoPath}
-                alt="Visitor"
-                style={styles.image}
-              />
-            )}
-
-            <div style={styles.actions}>
-              <button
-                onClick={() => handleUpdateStatus(v._id, "approved")}
-                disabled={v.status !== "pending"}
-                style={{
-                  background: v.status === "pending" ? "green" : "#ccc",
-                  color: "#fff",
-                  padding: "0.5rem 1rem",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: v.status === "pending" ? "pointer" : "not-allowed",
-                }}
-              >
-                ✅ Approve
-              </button>
-
-              <button
-                onClick={() => handleUpdateStatus(v._id, "rejected")}
-                disabled={v.status !== "pending"}
-                style={{
-                  background: v.status === "pending" ? "red" : "#ccc",
-                  color: "#fff",
-                  padding: "0.5rem 1rem",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: v.status === "pending" ? "pointer" : "not-allowed",
-                }}
-              >
-                ❌ Reject
-              </button>
-
-              <button
-                onClick={() => handleDelete(v._id, v.status)}
-                style={{
-                  background: "#444",
-                  color: "#fff",
-                  padding: "0.5rem 1rem",
-                  border: "none",
-                  borderRadius: "6px",
-                }}
-              >
-                🗑️ Delete
-              </button>
+      <div style={styles.visitorList}>
+        {filteredVisitors.length === 0 ? (
+          <p style={{ textAlign: "center" }}>No visitor entries found.</p>
+        ) : (
+          filteredVisitors.map((v, index) => (
+            <div key={v._id} style={styles.card}>
+              <p><strong>#{index + 1}</strong></p>
+              <p><strong>Name:</strong> {v.name}</p>
+              <p><strong>Phone:</strong> {v.phone}</p>
+              <p><strong>Reason:</strong> {v.reason}</p>
+              <p><strong>Time:</strong> {formatDate(v.createdAt)}</p>
+              <p>
+                <strong>Status:</strong>{" "}
+                <span style={{
+                  color: v.status === "approved" ? "green" :
+                         v.status === "rejected" ? "red" : "orange",
+                  fontWeight: "bold"
+                }}>
+                  {v.status}
+                </span>
+              </p>
+              {v.status === "approved" && v.approvedBy && (
+                <p><strong>Approved By:</strong> {v.approvedBy}</p>
+              )}
+              {v.status === "rejected" && v.rejectedBy && (
+                <p><strong>Rejected By:</strong> {v.rejectedBy}</p>
+              )}
+              {v.photoPath && (
+                <img src={v.photoPath} alt="Visitor" style={styles.image} />
+              )}
+              <div style={styles.actions}>
+                <button
+                  onClick={() => handleUpdateStatus(v._id, "approved")}
+                  disabled={v.status !== "pending"}
+                  style={{
+                    ...styles.actionBtn,
+                    background: v.status === "pending" ? "green" : "#ccc",
+                  }}
+                >
+                  ✅ Approve
+                </button>
+                <button
+                  onClick={() => handleUpdateStatus(v._id, "rejected")}
+                  disabled={v.status !== "pending"}
+                  style={{
+                    ...styles.actionBtn,
+                    background: v.status === "pending" ? "red" : "#ccc",
+                  }}
+                >
+                  ❌ Reject
+                </button>
+                <button
+                  onClick={() => handleDelete(v._id, v.status)}
+                  style={{ ...styles.actionBtn, background: "#444" }}
+                >
+                  🗑️ Delete
+                </button>
+              </div>
             </div>
-          </div>
-        ))
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 };
 
-// ✅ Styles
 const styles = {
   container: {
     padding: "1rem",
-    background: "#f9f9f9",
+    fontFamily: "Segoe UI, sans-serif",
+    background: "#f4f4f4",
     minHeight: "100vh",
-    fontFamily: "'Segoe UI', sans-serif",
   },
-  header: {
+  headerSection: {
+    textAlign: "center",
+    marginBottom: "1.2rem",
+  },
+  logo: {
+    height: "80px",
+    marginBottom: "0.1rem",
+    borderRadius: "8px",
+  },
+  companyName: {
+    fontFamily: "'Figtree', sans-serif",
+    fontSize: "1.5rem",
+    fontWeight: "bold",
+    color: "#2c3e50",
+    marginBottom: "0.2rem",
+    marginTop: 0,
+  },
+  centeredProfile: {
     display: "flex",
-    flexDirection: "column",
-    gap: "1rem",
-    alignItems: "center",
-    marginBottom: "2rem",
-  },
-  title: {
-    fontSize: "1.7rem",
-    fontWeight: "600",
-    color: "#333",
-  },
-  profileContainer: {
+    justifyContent: "center",
+    marginBottom: "1rem",
     position: "relative",
   },
   profileButton: {
@@ -310,8 +309,7 @@ const styles = {
   },
   dropdownMenu: {
     position: "absolute",
-    top: "115%",
-    right: 0,
+    top: "120%",
     backgroundColor: "#fff",
     boxShadow: "0 8px 20px rgba(0, 0, 0, 0.1)",
     borderRadius: "10px",
@@ -337,9 +335,19 @@ const styles = {
   filterWrapper: {
     display: "flex",
     flexWrap: "wrap",
-    gap: "1rem",
     justifyContent: "center",
+    gap: "0.75rem",
     marginBottom: "2rem",
+  },
+  select: {
+    padding: "0.5rem",
+    borderRadius: "6px",
+    minWidth: "150px",
+  },
+  dateInput: {
+    padding: "0.5rem",
+    borderRadius: "6px",
+    border: "1px solid #ccc",
   },
   exportBtn: {
     padding: "0.5rem 1rem",
@@ -349,24 +357,45 @@ const styles = {
     border: "none",
     cursor: "pointer",
   },
+  cancelBtn: {
+    padding: "0.5rem 1rem",
+    backgroundColor: "#999",
+    color: "#fff",
+    borderRadius: "6px",
+    border: "none",
+    cursor: "pointer",
+  },
+  visitorList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "1.5rem",
+  },
   card: {
     background: "#fff",
-    marginBottom: "1.5rem",
     padding: "1.5rem",
     borderRadius: "12px",
     boxShadow: "0 0 15px rgba(0,0,0,0.05)",
   },
   image: {
-    width: "200px",
-    borderRadius: "8px",
+    width: "100%",
+    maxWidth: "200px",
     marginTop: "1rem",
+    borderRadius: "8px",
   },
   actions: {
     marginTop: "1rem",
     display: "flex",
-    gap: "1rem",
     flexWrap: "wrap",
+    gap: "1rem",
   },
+  actionBtn: {
+    color: "#fff",
+    padding: "0.5rem 1rem",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+  },
+  
 };
 
 export default AdminPanel;
