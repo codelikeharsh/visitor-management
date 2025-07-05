@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { saveAs } from "file-saver";
 import { Helmet } from "react-helmet";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { requestFCMToken, onMessageListener } from "./firebaseInit";
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL || "http://localhost:5050";
 
@@ -16,17 +19,37 @@ const AdminPanel = () => {
   const adminUsername = localStorage.getItem("admin-username") || "Unknown";
 
   useEffect(() => {
-    const fetchVisitors = async () => {
-      try {
-        const res = await axios.get(`${BACKEND}/visitors`);
-        const sorted = res.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        setVisitors(sorted);
-      } catch (err) {
-        console.error("Error fetching visitors", err);
-      }
-    };
     fetchVisitors();
+    setupPushNotifications();
   }, []);
+
+  const fetchVisitors = async () => {
+    try {
+      const res = await axios.get(`${BACKEND}/visitors`);
+      const sorted = res.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setVisitors(sorted);
+    } catch (err) {
+      console.error("Error fetching visitors", err);
+    }
+  };
+
+  const setupPushNotifications = async () => {
+    try {
+      const token = await requestFCMToken();
+      if (token) {
+        await axios.post(`${BACKEND}/subscribe`, { token });
+      }
+
+      onMessageListener()
+        .then((payload) => {
+          const { title, body } = payload.notification;
+          toast.info(`${title}: ${body}`);
+        })
+        .catch((err) => console.error("FCM listener error:", err));
+    } catch (err) {
+      console.error("Push setup failed", err);
+    }
+  };
 
   const handleUpdateStatus = async (id, status) => {
     try {
@@ -34,8 +57,7 @@ const AdminPanel = () => {
         status,
         adminUsername,
       });
-      const res = await axios.get(`${BACKEND}/visitors`);
-      setVisitors(res.data);
+      fetchVisitors();
     } catch (err) {
       console.error("Status update failed", err);
     }
@@ -51,8 +73,7 @@ const AdminPanel = () => {
 
     try {
       await axios.delete(`${BACKEND}/visitor/${id}`);
-      const res = await axios.get(`${BACKEND}/visitors`);
-      setVisitors(res.data);
+      fetchVisitors();
     } catch (err) {
       console.error("Failed to delete visitor", err);
     }
@@ -96,9 +117,7 @@ const AdminPanel = () => {
   };
 
   const filteredVisitors =
-    filter === "all"
-      ? visitors
-      : visitors.filter((v) => v.status === filter);
+    filter === "all" ? visitors : visitors.filter((v) => v.status === filter);
 
   return (
     <div style={styles.container}>
@@ -106,7 +125,6 @@ const AdminPanel = () => {
         <title>Admin Panel - The Waste Management Co.</title>
       </Helmet>
 
-      {/* Header */}
       <div style={styles.headerSection}>
         <img
           src="https://i.ibb.co/BVtrc6bv/file-00000000c68061f597b5d88c579c8394.png"
@@ -116,33 +134,29 @@ const AdminPanel = () => {
         <h2 style={styles.companyName}>The Waste Management (WM) Co.</h2>
 
         <div style={styles.centeredProfile}>
-          <div
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-            style={styles.profileButton}
-          >
+          <div onClick={() => setDropdownOpen(!dropdownOpen)} style={styles.profileButton}>
             <span style={styles.avatarCircle}>{adminUsername[0]?.toUpperCase()}</span>
             <span style={styles.username}>{adminUsername}</span>
             <span style={styles.arrow}>{dropdownOpen ? "▲" : "▼"}</span>
           </div>
           {dropdownOpen && (
             <div style={styles.dropdownMenu}>
-              <div style={styles.dropdownItem}>Logged in as <strong>{adminUsername}</strong></div>
+              <div style={styles.dropdownItem}>
+                Logged in as <strong>{adminUsername}</strong>
+              </div>
               <hr style={{ margin: "0.5rem 0" }} />
-              <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
+              <button onClick={handleLogout} style={styles.logoutBtn}>
+                Logout
+              </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Filters */}
       <div style={styles.filterWrapper}>
         <div style={styles.statusFilter}>
           <label><strong>Status:</strong></label>
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            style={styles.select}
-          >
+          <select value={filter} onChange={(e) => setFilter(e.target.value)} style={styles.select}>
             <option value="all">All</option>
             <option value="pending">Pending</option>
             <option value="approved">Approved</option>
@@ -151,41 +165,17 @@ const AdminPanel = () => {
         </div>
 
         {!showExportFields ? (
-          <button onClick={() => setShowExportFields(true)} style={styles.exportBtn}>
-            Export
-          </button>
+          <button onClick={() => setShowExportFields(true)} style={styles.exportBtn}>Export</button>
         ) : (
           <>
-            <input
-              type="date"
-              placeholder="Start Date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              style={styles.dateInput}
-            />
-            <input
-              type="date"
-              placeholder="End Date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              style={styles.dateInput}
-            />
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={styles.dateInput} />
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={styles.dateInput} />
             <button onClick={handleExport} style={styles.downloadBtn}>⬇️ Download</button>
-            <button
-              onClick={() => {
-                setShowExportFields(false);
-                setStartDate("");
-                setEndDate("");
-              }}
-              style={styles.cancelBtn}
-            >
-              Cancel
-            </button>
+            <button onClick={() => { setShowExportFields(false); setStartDate(""); setEndDate(""); }} style={styles.cancelBtn}>Cancel</button>
           </>
         )}
       </div>
 
-      {/* Visitor Cards */}
       <div style={styles.visitorList}>
         {filteredVisitors.length === 0 ? (
           <p style={{ textAlign: "center" }}>No visitor entries found.</p>
@@ -195,45 +185,33 @@ const AdminPanel = () => {
               <p><strong>#{index + 1}</strong></p>
               <p><strong>Name:</strong> {v.name}</p>
               <p><strong>Phone:</strong> {v.phone}</p>
-              <p><strong>Reason:</strong> {v.reason}</p>
+              <p><strong>Company:</strong> {v.company || "N/A"}</p>
+              <p><strong>Person to Meet:</strong> {v.personToMeet}</p>
+              <p><strong>Purpose:</strong> {v.purpose}</p>
               <p><strong>Time:</strong> {formatDate(v.createdAt)}</p>
-              <p>
-                <strong>Status:</strong>{" "}
+              <p><strong>Status:</strong>{" "}
                 <span style={{
-                  color: v.status === "approved" ? "green" :
-                         v.status === "rejected" ? "red" : "orange",
+                  color: v.status === "approved" ? "green" : v.status === "rejected" ? "red" : "orange",
                   fontWeight: "bold"
                 }}>
                   {v.status}
                 </span>
               </p>
-              {v.status === "approved" && v.approvedBy && (
-                <p><strong>Approved By:</strong> {v.approvedBy}</p>
-              )}
-              {v.status === "rejected" && v.rejectedBy && (
-                <p><strong>Rejected By:</strong> {v.rejectedBy}</p>
-              )}
-              {v.photoPath && (
-                <img src={v.photoPath} alt="Visitor" style={styles.image} />
-              )}
+              {v.status === "approved" && v.approvedBy && <p><strong>Approved By:</strong> {v.approvedBy}</p>}
+              {v.status === "rejected" && v.rejectedBy && <p><strong>Rejected By:</strong> {v.rejectedBy}</p>}
+              {v.photoPath && <img src={v.photoPath} alt="Visitor" style={styles.image} />}
               <div style={styles.actions}>
                 <button
                   onClick={() => handleUpdateStatus(v._id, "approved")}
                   disabled={v.status !== "pending"}
-                  style={{
-                    ...styles.actionBtn,
-                    background: v.status === "pending" ? "green" : "#ccc",
-                  }}
+                  style={{ ...styles.actionBtn, background: v.status === "pending" ? "green" : "#ccc" }}
                 >
                   Approve
                 </button>
                 <button
                   onClick={() => handleUpdateStatus(v._id, "rejected")}
                   disabled={v.status !== "pending"}
-                  style={{
-                    ...styles.actionBtn,
-                    background: v.status === "pending" ? "red" : "#ccc",
-                  }}
+                  style={{ ...styles.actionBtn, background: v.status === "pending" ? "red" : "#ccc" }}
                 >
                   Reject
                 </button>
@@ -248,9 +226,12 @@ const AdminPanel = () => {
           ))
         )}
       </div>
+
+      <ToastContainer position="top-center" autoClose={5000} />
     </div>
   );
 };
+
 
 const styles = {
   container: {

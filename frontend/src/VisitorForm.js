@@ -2,12 +2,20 @@ import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import { Helmet } from "react-helmet";
+import { useNavigate } from "react-router-dom"; // ✅ added
 import "react-toastify/dist/ReactToastify.css";
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL;
 
 const VisitorForm = () => {
-  const [formData, setFormData] = useState({ name: "", phone: "", reason: "" });
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    company: "",
+    personToMeet: "",
+    purpose: "",
+  });
+
   const [message, setMessage] = useState("");
   const [photoBlob, setPhotoBlob] = useState(null);
   const [cameraActive, setCameraActive] = useState(false);
@@ -16,18 +24,22 @@ const VisitorForm = () => {
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const navigate = useNavigate(); // ✅ added
 
   useEffect(() => {
     return () => {
       if (videoRef.current?.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
       }
     };
   }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: name === "phone" ? value.replace(/\D/g, "") : value });
+    setFormData({
+      ...formData,
+      [name]: name === "phone" ? value.replace(/\D/g, "") : value,
+    });
   };
 
   const openCamera = () => {
@@ -55,7 +67,7 @@ const VisitorForm = () => {
     canvas.toBlob((blob) => {
       if (!blob) return;
       setPhotoBlob(new Blob([blob], { type: "image/jpeg" }));
-      video.srcObject?.getTracks().forEach(track => track.stop());
+      video.srcObject?.getTracks().forEach((track) => track.stop());
       video.srcObject = null;
       setCameraActive(false);
     }, "image/jpeg", 0.6);
@@ -71,21 +83,38 @@ const VisitorForm = () => {
       setMessage("❌ Please capture a photo first.");
       return;
     }
+
     const data = new FormData();
     data.append("name", formData.name);
     data.append("phone", formData.phone);
-    data.append("reason", formData.reason);
+    data.append("company", formData.company);
+    data.append("personToMeet", formData.personToMeet);
+    data.append("purpose", formData.purpose);
     data.append("photo", photoBlob, "visitor.jpg");
+
     try {
       setLoading(true);
       setProgress(10);
-      await axios.post(`${BACKEND}/visitor`, data, {
+      const response = await axios.post(`${BACKEND}/visitor`, data, {
         timeout: 10000,
         onUploadProgress: (e) => setProgress(Math.round((e.loaded * 100) / e.total)),
       });
+
       toast.success("Visitor form submitted!");
       setMessage("");
-      setFormData({ name: "", phone: "", reason: "" });
+
+      // ✅ redirect to confirmation screen
+      const id = response.data.id;
+      navigate(`/visitor/${id}`);
+
+      // clear local state
+      setFormData({
+        name: "",
+        phone: "",
+        company: "",
+        personToMeet: "",
+        purpose: "",
+      });
       setPhotoBlob(null);
     } catch (err) {
       console.error("❌ Submission failed:", err);
@@ -123,10 +152,27 @@ const VisitorForm = () => {
         title="Enter exactly 10 digits"
         required
       />
+      <input
+        type="text"
+        name="company"
+        placeholder="Company"
+        value={formData.company}
+        onChange={handleChange}
+        style={styles.input}
+      />
+      <input
+        type="text"
+        name="personToMeet"
+        placeholder="Person to Meet"
+        value={formData.personToMeet}
+        onChange={handleChange}
+        style={styles.input}
+        required
+      />
       <textarea
-        name="reason"
-        placeholder="Reason for Visit"
-        value={formData.reason}
+        name="purpose"
+        placeholder="Purpose of Visit"
+        value={formData.purpose}
         onChange={handleChange}
         style={styles.textarea}
         rows={3}

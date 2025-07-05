@@ -9,6 +9,7 @@ import VisitorForm from "./VisitorForm";
 import AdminPanel from "./AdminPanel";
 import AdminLogin from "./AdminLogin";
 import GuardPanel from "./GuardPanel";
+import VisitorStatus from "./VisitorStatus"; // ✅ New import
 import "./App.css";
 
 const App = () => {
@@ -32,7 +33,7 @@ const App = () => {
     <Router>
       <Routes>
         <Route path="/" element={<VisitorPage />} />
-
+        
         <Route
           path="/admin"
           element={
@@ -56,6 +57,9 @@ const App = () => {
         />
 
         <Route path="/guard" element={<GuardPanel />} />
+        
+        {/* ✅ New confirmation route */}
+        <Route path="/visitor/:id" element={<VisitorStatus />} />
       </Routes>
     </Router>
   );
@@ -65,7 +69,7 @@ const VisitorPage = () => (
   <div className="page-container fade-in">
     <div className="gold-border">
       <h1 className="main-heading">
-        Welcome to Indore's First<br/> Green Waste Processing Plant
+        Welcome to India's First Green Waste Processing Plant (TWM-IMC, Indore)
       </h1>
 
       <img
@@ -81,15 +85,9 @@ const VisitorPage = () => (
       </div>
 
       <footer className="footer">
-        <div>
-        © {new Date().getFullYear()} The Waste Management (WM) Co.
-       </div>
-       <div>
-        All Rights Reserved.
-       </div>
-       <div>
-        Crafted with ❤️ by Harsh
-       </div>
+        <div>© {new Date().getFullYear()} The Waste Management (WM) Co.</div>
+        <div>All Rights Reserved.</div>
+        <div>Crafted with ❤️ by Harsh</div>
       </footer>
     </div>
   </div>
