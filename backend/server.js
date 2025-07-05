@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const Visitor = require("./models/Visitor");
 const Admin = require("./models/Admin");
-const FCMToken = require("./models/FCMToken"); // 🔔 Token model
+const FCMToken = require("./models/FCMToken");
 const cloudinary = require("cloudinary").v2;
 const streamifier = require("streamifier");
 const cron = require("node-cron");
@@ -14,6 +14,7 @@ const exportRouter = require("./routes/export");
 const admin = require("firebase-admin");
 const serviceAccount = require("./firebase-key.json");
 
+// ✅ Init
 dotenv.config();
 const app = express();
 app.use(cors());
@@ -24,7 +25,7 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
-// ✅ Cloudinary Config
+// ✅ Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -41,12 +42,12 @@ mongoose
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// ✅ Health Check
+// ✅ Health check
 app.get("/", (req, res) => {
   res.send("✅ Backend is running.");
 });
 
-// ✅ Admin Login
+// ✅ Admin login
 app.post("/admin/login", async (req, res) => {
   const { username, password } = req.body;
   try {
@@ -54,6 +55,7 @@ app.post("/admin/login", async (req, res) => {
     if (!adminDoc || adminDoc.password !== password) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
+
     res.status(200).json({
       success: true,
       message: "Login successful",
@@ -64,7 +66,7 @@ app.post("/admin/login", async (req, res) => {
   }
 });
 
-// ✅ Store FCM Token
+// ✅ Store FCM token
 app.post("/subscribe", async (req, res) => {
   const { token } = req.body;
   if (!token) return res.status(400).json({ error: "Token is required" });
@@ -77,21 +79,21 @@ app.post("/subscribe", async (req, res) => {
     }
     res.status(200).json({ success: true });
   } catch (err) {
-    console.error("❌ Token save failed:", err);
+    console.error("❌ Failed to store FCM token:", err);
     res.status(500).json({ error: "Failed to save token" });
   }
 });
 
-// ✅ Create Visitor + Send Notification
+// ✅ Create Visitor + Push Notification
 app.post("/visitor", upload.single("photo"), async (req, res) => {
   const { name, phone, company, personToMeet, purpose } = req.body;
   const file = req.file;
+
   if (!file || !name || !phone || !personToMeet || !purpose) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
   try {
-    // Upload photo
     const uploadToCloudinary = () =>
       new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
@@ -113,31 +115,37 @@ app.post("/visitor", upload.single("photo"), async (req, res) => {
       createdAt: new Date(),
     });
 
-    // 🔔 Send push to all stored FCM tokens
+    // ✅ Get all tokens
     const tokens = await FCMToken.find({});
     const messages = tokens.map((t) => ({
+      token: t.token,
       notification: {
         title: "🚨 New Visitor Entry",
         body: `${name} is waiting for approval.`,
       },
-      token: t.token,
+      data: {
+        title: "🚨 New Visitor Entry",
+        body: `${name} is waiting for approval.`,
+      },
     }));
 
-    // Send messages in parallel
-    const responses = await Promise.allSettled(
+    // ✅ Send all messages
+    const results = await Promise.allSettled(
       messages.map((msg) => admin.messaging().send(msg))
     );
 
-    console.log(`🔔 Notifications sent: ${responses.length}`);
+    const successCount = results.filter((r) => r.status === "fulfilled").length;
+    const failCount = results.length - successCount;
+    console.log(`🔔 Notifications sent: ✅ ${successCount} ❌ ${failCount}`);
 
     res.status(200).json({ message: "Visitor saved!", id: newVisitor._id });
   } catch (err) {
-    console.error("❌ Error:", err);
+    console.error("❌ Error saving visitor:", err);
     res.status(500).json({ error: "Failed to create visitor" });
   }
 });
 
-// ✅ Get Visitor by ID
+// ✅ Get visitor by ID
 app.get("/visitors/:id", async (req, res) => {
   try {
     const visitor = await Visitor.findById(req.params.id);
@@ -148,7 +156,7 @@ app.get("/visitors/:id", async (req, res) => {
   }
 });
 
-// ✅ Get All Visitors
+// ✅ Get all visitors
 app.get("/visitors", async (req, res) => {
   try {
     const visitors = await Visitor.find().sort({ createdAt: -1 });
@@ -158,28 +166,29 @@ app.get("/visitors", async (req, res) => {
   }
 });
 
-// ✅ Update Visitor Status
+// ✅ Update status
 app.patch("/visitor/:id/status", async (req, res) => {
   const { id } = req.params;
   const { status, adminUsername } = req.body;
+
   if (!["approved", "rejected"].includes(status)) {
     return res.status(400).json({ error: "Invalid status" });
   }
 
   try {
-    const fields = { status };
+    const update = { status };
     if (adminUsername) {
-      fields[status === "approved" ? "approvedBy" : "rejectedBy"] = adminUsername;
+      update[status === "approved" ? "approvedBy" : "rejectedBy"] = adminUsername;
     }
 
-    const updated = await Visitor.findByIdAndUpdate(id, fields, { new: true });
+    const updated = await Visitor.findByIdAndUpdate(id, update, { new: true });
     res.status(200).json(updated);
   } catch (err) {
     res.status(500).json({ error: "Failed to update status" });
   }
 });
 
-// ✅ Mark Checkout
+// ✅ Mark checkout
 app.patch("/visitor/:id/checkout", async (req, res) => {
   try {
     const updated = await Visitor.findByIdAndUpdate(
@@ -193,7 +202,7 @@ app.patch("/visitor/:id/checkout", async (req, res) => {
   }
 });
 
-// ✅ Delete Visitor
+// ✅ Delete visitor
 app.delete("/visitor/:id", async (req, res) => {
   try {
     await Visitor.findByIdAndDelete(req.params.id);
@@ -203,17 +212,15 @@ app.delete("/visitor/:id", async (req, res) => {
   }
 });
 
-// ✅ Export Excel
+// ✅ Export route
 app.use("/", exportRouter);
 
-// ✅ Cron Job
+// ✅ Scheduled daily export
 cron.schedule("0 18 * * *", async () => {
-  console.log("📅 Exporting visitors...");
+  console.log("📅 Running 6 PM export...");
   await exportToExcel();
 });
 
-// ✅ Start Server
+// ✅ Start server
 const PORT = process.env.PORT || 5050;
-// 🔔 Manual push notification test
-
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
