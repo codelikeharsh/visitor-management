@@ -116,18 +116,24 @@ app.post("/visitor", upload.single("photo"), async (req, res) => {
     });
 
     // ✅ Get all tokens
-    const tokens = await FCMToken.find({});
-    const messages = tokens.map((t) => ({
-      token: t.token,
-      notification: {
-        title: "🚨 New Visitor Entry",
-        body: `${name} is waiting for approval.`,
-      },
-      data: {
-        title: "🚨 New Visitor Entry",
-        body: `${name} is waiting for approval.`,
-      },
-    }));
+   const tokens = await FCMToken.find({});
+const messages = tokens.map((t) => ({
+  token: t.token,
+  notification: {
+    title: "🚨 New Visitor Entry",
+    body: `${name} is waiting for approval.`,
+    image: "https://i.ibb.co/BVtrc6bv/file-00000000c68061f597b5d88c579c8394.png",
+  },
+}));
+
+const results = await Promise.allSettled(
+  messages.map((msg) => admin.messaging().send(msg))
+);
+
+const successCount = results.filter((r) => r.status === "fulfilled").length;
+const failCount = results.length - successCount;
+console.log(`🔔 Notifications sent: ✅ ${successCount} ❌ ${failCount}`);
+
 
     // ✅ Send all messages
     const results = await Promise.allSettled(
