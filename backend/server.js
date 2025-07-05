@@ -14,8 +14,10 @@ const exportRouter = require("./routes/export");
 const admin = require("firebase-admin");
 const serviceAccount = require("./firebase-key.json");
 
-// ✅ Init
+// ✅ Load environment variables
 dotenv.config();
+
+// ✅ App setup
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -25,29 +27,29 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
-// ✅ Cloudinary
+// ✅ Cloudinary config
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// ✅ MongoDB
+// ✅ MongoDB connection
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ Connected to MongoDB"))
   .catch((err) => console.error("❌ MongoDB error:", err));
 
-// ✅ Multer
+// ✅ Multer (for photo uploads)
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// ✅ Health check
+// ✅ Health check route
 app.get("/", (req, res) => {
   res.send("✅ Backend is running.");
 });
 
-// ✅ Admin login
+// ✅ Admin login route
 app.post("/admin/login", async (req, res) => {
   const { username, password } = req.body;
   try {
@@ -55,7 +57,6 @@ app.post("/admin/login", async (req, res) => {
     if (!adminDoc || adminDoc.password !== password) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
-
     res.status(200).json({
       success: true,
       message: "Login successful",
@@ -66,7 +67,7 @@ app.post("/admin/login", async (req, res) => {
   }
 });
 
-// ✅ Store FCM token
+// ✅ Subscribe and store FCM token
 app.post("/subscribe", async (req, res) => {
   const { token } = req.body;
   if (!token) return res.status(400).json({ error: "Token is required" });
@@ -84,7 +85,7 @@ app.post("/subscribe", async (req, res) => {
   }
 });
 
-// ✅ Create Visitor + Push Notification
+// ✅ Create a new visitor and send notification
 app.post("/visitor", upload.single("photo"), async (req, res) => {
   const { name, phone, company, personToMeet, purpose } = req.body;
   const file = req.file;
@@ -115,27 +116,17 @@ app.post("/visitor", upload.single("photo"), async (req, res) => {
       createdAt: new Date(),
     });
 
-    // ✅ Get all tokens
-   const tokens = await FCMToken.find({});
-const messages = tokens.map((t) => ({
-  token: t.token,
-  notification: {
-    title: "🚨 New Visitor Entry",
-    body: `${name} is waiting for approval.`,
-    image: "https://i.ibb.co/BVtrc6bv/file-00000000c68061f597b5d88c579c8394.png",
-  },
-}));
+    // ✅ Send push notification to all saved tokens
+    const tokens = await FCMToken.find({});
+    const messages = tokens.map((t) => ({
+      token: t.token,
+      notification: {
+        title: "🚨 New Visitor Entry",
+        body: `${name} is waiting for approval.`,
+        image: "https://i.ibb.co/BVtrc6bv/file-00000000c68061f597b5d88c579c8394.png",
+      },
+    }));
 
-const results = await Promise.allSettled(
-  messages.map((msg) => admin.messaging().send(msg))
-);
-
-const successCount = results.filter((r) => r.status === "fulfilled").length;
-const failCount = results.length - successCount;
-console.log(`🔔 Notifications sent: ✅ ${successCount} ❌ ${failCount}`);
-
-
-    // ✅ Send all messages
     const results = await Promise.allSettled(
       messages.map((msg) => admin.messaging().send(msg))
     );
@@ -151,7 +142,7 @@ console.log(`🔔 Notifications sent: ✅ ${successCount} ❌ ${failCount}`);
   }
 });
 
-// ✅ Get visitor by ID
+// ✅ Get a visitor by ID
 app.get("/visitors/:id", async (req, res) => {
   try {
     const visitor = await Visitor.findById(req.params.id);
@@ -172,7 +163,7 @@ app.get("/visitors", async (req, res) => {
   }
 });
 
-// ✅ Update status
+// ✅ Update visitor status
 app.patch("/visitor/:id/status", async (req, res) => {
   const { id } = req.params;
   const { status, adminUsername } = req.body;
@@ -194,7 +185,7 @@ app.patch("/visitor/:id/status", async (req, res) => {
   }
 });
 
-// ✅ Mark checkout
+// ✅ Mark visitor as checked out
 app.patch("/visitor/:id/checkout", async (req, res) => {
   try {
     const updated = await Visitor.findByIdAndUpdate(
@@ -221,7 +212,7 @@ app.delete("/visitor/:id", async (req, res) => {
 // ✅ Export route
 app.use("/", exportRouter);
 
-// ✅ Scheduled daily export
+// ✅ Daily export at 6 PM
 cron.schedule("0 18 * * *", async () => {
   console.log("📅 Running 6 PM export...");
   await exportToExcel();
