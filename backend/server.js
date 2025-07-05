@@ -67,20 +67,24 @@ app.post("/admin/login", async (req, res) => {
   }
 });
 
-// ✅ Subscribe and store FCM token
+// ✅ Subscribe and store/update FCM token
 app.post("/subscribe", async (req, res) => {
   const { token } = req.body;
   if (!token) return res.status(400).json({ error: "Token is required" });
 
   try {
-    const exists = await FCMToken.findOne({ token });
-    if (!exists) {
+    const existing = await FCMToken.findOne({ token });
+    if (!existing) {
       await FCMToken.create({ token });
       console.log("✅ FCM Token stored:", token);
+    } else {
+      existing.lastUsedAt = new Date();
+      await existing.save();
+      console.log("🔄 Token already exists. Updated lastUsedAt.");
     }
     res.status(200).json({ success: true });
   } catch (err) {
-    console.error("❌ Failed to store FCM token:", err);
+    console.error("❌ Failed to store/update FCM token:", err);
     res.status(500).json({ error: "Failed to save token" });
   }
 });
@@ -116,7 +120,7 @@ app.post("/visitor", upload.single("photo"), async (req, res) => {
       createdAt: new Date(),
     });
 
-    // ✅ Send push notification to all saved tokens
+    // ✅ Send push notifications
     const tokens = await FCMToken.find({});
     const messages = tokens.map((t) => ({
       token: t.token,
@@ -131,8 +135,22 @@ app.post("/visitor", upload.single("photo"), async (req, res) => {
       messages.map((msg) => admin.messaging().send(msg))
     );
 
-    const successCount = results.filter((r) => r.status === "fulfilled").length;
-    const failCount = results.length - successCount;
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      const token = tokens[i].token;
+
+      if (result.status === "fulfilled") {
+        successCount++;
+        await FCMToken.updateOne({ token }, { lastUsedAt: new Date() });
+      } else {
+        failCount++;
+        console.warn(`❌ Notification failed for token ${token}:`, result.reason.message || result.reason);
+      }
+    }
+
     console.log(`🔔 Notifications sent: ✅ ${successCount} ❌ ${failCount}`);
 
     res.status(200).json({ message: "Visitor saved!", id: newVisitor._id });
