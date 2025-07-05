@@ -147,7 +147,21 @@ app.post("/visitor", upload.single("photo"), async (req, res) => {
         await FCMToken.updateOne({ token }, { lastUsedAt: new Date() });
       } else {
         failCount++;
-        console.warn(`❌ Notification failed for token ${token}:`, result.reason.message || result.reason);
+        const errorMsg =
+          result.reason?.error?.message ||
+          result.reason?.message ||
+          result.reason?.toString();
+
+        console.warn(`❌ Notification failed for token ${token}:`, errorMsg);
+
+        const shouldDelete =
+          errorMsg.includes("Requested entity was not found") ||
+          errorMsg.includes("not a valid FCM registration token");
+
+        if (shouldDelete) {
+          await FCMToken.deleteOne({ token });
+          console.log(`🗑️ Deleted invalid token: ${token}`);
+        }
       }
     }
 
@@ -235,6 +249,13 @@ cron.schedule("0 18 * * *", async () => {
   console.log("📅 Running 6 PM export...");
   await exportToExcel();
 });
+
+// ✅ (Optional) Daily token cleanup — remove if not needed
+// cron.schedule("0 3 * * *", async () => {
+//   const cutoff = new Date(Date.now() - 1000 * 60 * 60 * 24 * 90);
+//   const result = await FCMToken.deleteMany({ createdAt: { $lt: cutoff } });
+//   console.log(`🧹 Daily token cleanup: ${result.deletedCount} old tokens removed.`);
+// });
 
 // ✅ Start server
 const PORT = process.env.PORT || 5050;
