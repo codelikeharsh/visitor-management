@@ -73,7 +73,7 @@ const VisitorPage = () => (
       </h1>
 
       <img
-        src="https://i.ibb.co/FLt09h2L/Whats-App-Image-2025-07-05-at-21-47-16.jpg"
+        src="https://i.ibb.co/1fcFGPkM/The-waste-Management-WM-co-4-1.png"
         alt="Green Waste Plant"
         className="plant-image"
       />

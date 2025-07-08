@@ -13,18 +13,17 @@ const fcmTokenSchema = new mongoose.Schema(
     createdAt: {
       type: Date,
       default: Date.now,
-
-      // ⏱️ Optional: Automatically delete token after 90 days (MongoDB TTL index)
-      expires: '90d',
+      expires: 60 * 60 * 24 * 90, // ⏱️ TTL: 90 days in seconds
     },
 
-    // 🔁 Optional: Track last usage
-    // lastUsedAt: {
-    //   type: Date,
-    //   default: Date.now,
-    // },
+    // 🔁 Optional: Track last time this token was used
+    lastUsedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
+    timestamps: false,
     versionKey: false,
   }
 );
